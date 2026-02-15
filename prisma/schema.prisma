@@ -1,0 +1,46 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  projects  Project[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id             String                @id @default(cuid())
+  name           String
+  description    String?
+  ownerId        String
+  owner          User                  @relation(fields: [ownerId], references: [id])
+  openApiSpec    String? // JSON string
+  llmConfig      String? // JSON string
+  status         String                @default("DRAFT") // DRAFT, GENERATING, READY, ERROR
+  enrichments    EndpointEnrichment[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+}
+
+model EndpointEnrichment {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  method      String
+  path        String
+  description String?
+  instruction String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, method, path])
+}

@@ -1,0 +1,43 @@
+🚀 Prompt de Développement : API-to-App Generator
+Contexte : Développer une application web de type "Meta-Générateur" capable de transformer des fichiers OpenAPI (Swagger) en applications web clientes complètes et déployables, en utilisant la puissance des LLM.
+
+1. Architecture & Authentification
+Gestion Utilisateurs : Implémenter un système d'authentification complet (Signup/Login).
+
+Espace de Travail : Chaque utilisateur possède un tableau de bord privé regroupant ses projets.
+
+Persistance : Toutes les données (métadonnées du projet, fichiers OpenAPI, descriptions enrichies et code généré) doivent être stockées de manière persistante (Base de données + Stockage fichier).
+
+2. Workflow de Création de Projet
+L'interface doit guider l'utilisateur à travers les étapes suivantes :
+
+Initialisation : Saisie du Nom et de la Description du projet.
+
+Ingestion API : Upload d'un fichier OpenAPI (format .json ou .yaml).
+
+Enrichissement : Interface permettant d'ajouter des descriptions textuelles ou des consignes spécifiques sur chaque endpoint détecté pour guider le LLM.
+
+Configuration LLM : Choix et configuration du modèle (clé API, modèle spécifique) qui sera utilisé pour la génération.
+
+3. Moteur de Génération (Cœur du Système)
+Action : Un bouton "Générer l'Application" déclenche le processus.
+
+Logique : * Parser le fichier OpenAPI.
+
+Envoyer la structure de l'API + les descriptions enrichies au LLM sélectionné.
+
+Demander au LLM de produire la structure complète du code (Frontend, gestion des appels API, State management).
+
+Stockage du Code : Le code généré doit être isolé dans un répertoire spécifique propre au projet.
+
+4. Visualisation et Déploiement
+Preview : Intégrer un environnement (type Sandbox ou Container léger) permettant de lancer et de visualiser l'application générée directement depuis l'interface du projet.
+
+Export/Build : Fonctionnalité pour générer une version "deployable" (ex: archive ZIP, Dockerfile ou push vers un repo Git) prête pour la mise en production.
+
+Spécifications Techniques attendues :
+Frontend : Framework moderne (React, Vue ou Next.js).
+
+Backend : Langage robuste (Python/FastAPI ou Node.js) pour gérer les appels LLM et le système de fichiers.
+
+Sécurité : Isolation stricte du code généré pour éviter toute exécution malveillante sur le serveur hôte.
