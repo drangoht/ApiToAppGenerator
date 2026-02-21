@@ -5,13 +5,13 @@ import fs from "fs"
 import archiver from "archiver"
 import { NextResponse } from "next/server"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth()
     if (!session?.user?.email) {
         return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const projectId = params.id;
+    const { id: projectId } = await params;
 
     // Verify ownership
     const user = await prisma.user.findUnique({ where: { email: session.user.email } })

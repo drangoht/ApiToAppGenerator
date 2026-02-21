@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 
-const initialState = {
+const initialState: any = {
     message: '',
     errors: {},
 }
@@ -29,6 +29,9 @@ export function LlmConfigForm({ projectId, initialConfig }: { projectId: string;
                         <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
                         <SelectItem value="claude-3-opus">Claude 3 Opus (via Proxy)</SelectItem>
                         <SelectItem value="claude-3-sonnet">Claude 3.5 Sonnet (via Proxy)</SelectItem>
+                        <SelectItem value="openrouter/anthropic/claude-3.5-sonnet">OpenRouter: Claude 3.5 Sonnet</SelectItem>
+                        <SelectItem value="openrouter/meta-llama/llama-3.1-70b-instruct">OpenRouter: LLaMA 3.1 70B</SelectItem>
+                        <SelectItem value="openrouter/google/gemini-pro-1.5">OpenRouter: Gemini 1.5 Pro</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

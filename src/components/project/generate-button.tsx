@@ -15,11 +15,9 @@ export function GenerateButton({ projectId, disabled }: { projectId: string; dis
         try {
             const result = await generateAppAction(projectId);
             if (result.success) {
-                // Success toast
-                console.log("Success");
+                toast.success(result.message);
             } else {
-                // Error toast
-                console.error("Error");
+                toast.error(result.message);
             }
         } catch (e) {
             console.error(e);

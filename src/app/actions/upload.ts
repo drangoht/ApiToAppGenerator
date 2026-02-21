@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { parseOpenApiSpec } from "@/lib/openapi-parser"
 import { OpenAPIV3 } from "openapi-types"
+import yaml from 'js-yaml'
 
 export async function uploadOpenApiSpec(projectId: string, formData: FormData) {
     const session = await auth()
@@ -19,10 +20,16 @@ export async function uploadOpenApiSpec(projectId: string, formData: FormData) {
 
     let parsedSpec;
     try {
+        let specObj;
+        try {
+            specObj = JSON.parse(content);
+        } catch {
+            specObj = yaml.load(content);
+        }
         // We parse/validate it first
-        parsedSpec = await parseOpenApiSpec(JSON.parse(content));
+        parsedSpec = await parseOpenApiSpec(specObj);
     } catch (error) {
-        return { message: "Invalid OpenAPI File. Please ensure it is a valid JSON Swagger/OpenAPI spec." }
+        return { message: "Invalid OpenAPI File. Please ensure it is a valid JSON or YAML Swagger/OpenAPI spec." }
     }
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email } })

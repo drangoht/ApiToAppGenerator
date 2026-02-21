@@ -6,11 +6,21 @@ import path from "path"
 export class GeneratorService {
     private openai: OpenAI;
     private projectId: string;
+    private model: string;
 
-    constructor(projectId: string, apiKey?: string) {
+    constructor(projectId: string, apiKey?: string, model: string = "gpt-4-turbo") {
         this.projectId = projectId;
+        this.model = model;
+
+        let baseURL = undefined;
+        if (this.model.startsWith("openrouter/")) {
+            baseURL = "https://openrouter.ai/api/v1";
+            this.model = this.model.replace("openrouter/", "");
+        }
+
         this.openai = new OpenAI({
             apiKey: apiKey || process.env.OPENAI_API_KEY,
+            baseURL: baseURL,
         });
     }
 
@@ -38,27 +48,46 @@ export class GeneratorService {
         - Language: TypeScript
         - State Management: React Context or Zustand if complex.
 
-        Output Requirements:
-        - You must generate the full source code for the application.
-        - You must wrap each file in a special block:
+        CRITICAL Output Requirements:
+        1. You MUST generate the full source code for the application. DO NOT use placeholders like "// implement here".
+        2. You MUST explicitly generate EVERY SINGLE FILE that you import. If you import '@/store/use-cat-store', you MUST provide the code for 'src/store/use-cat-store.ts'. Hallucinated imports will break the build.
+        3. You MUST provide a 'package.json' file including all third-party dependencies you used (e.g. zustand, axios, lucide-react).
+        4. Wrap each file in a special block exactly like this:
+        
         <<<FILE:path/to/file>>>
         [file content]
         <<<END>>>
 
-        - Example:
+        Example:
         <<<FILE:src/app/page.tsx>>>
         export default function Home() { return <div>Hello</div> }
         <<<END>>>
         
-        - Do not omit any files. Include package.json (if needed to add specific deps), standard Next.js structure, components, and API integration logic.
-        - Focus on creating a clean, modern, and functional UI.
+        Focus on creating a clean, modern, functional UI that connects to the described API endpoints.
         `;
+
+        // Extract endpoints from spec to explicitly highlight their descriptions
+        let endpointSummaries = "";
+        const paths = spec.paths || {};
+        for (const [pathUrl, methods] of Object.entries(paths)) {
+            for (const [method, details] of Object.entries(methods as any)) {
+                if (['get', 'post', 'put', 'delete', 'patch'].includes(method.toLowerCase())) {
+                    const desc = (details as any).description || (details as any).summary || "";
+                    if (desc) {
+                        endpointSummaries += `- ${method.toUpperCase()} ${pathUrl}: ${desc}\n`;
+                    }
+                }
+            }
+        }
 
         const userPrompt = `
         Here is the OpenAPI Specification for the application:
         ${JSON.stringify(spec, null, 2)}
+        
+        Endpoint Descriptions (Pay close attention to these for business logic):
+        ${endpointSummaries}
 
-        Specific Instructions/Enrichments:
+        Specific Instructions/User Enrichments:
         ${enrichments.map(e => `- ${e.method} ${e.path}: ${e.instruction} (${e.description})`).join('\n')}
 
         Please generate the application code now. Start with the API client/service layer, then components, then pages.
@@ -71,7 +100,7 @@ export class GeneratorService {
 
         try {
             const completion = await this.openai.chat.completions.create({
-                model: "gpt-4-turbo", // Default or from project config
+                model: this.model,
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userPrompt }

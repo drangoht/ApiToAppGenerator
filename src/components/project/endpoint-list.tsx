@@ -29,6 +29,7 @@ type Endpoint = {
     method: string
     path: string
     summary?: string
+    description?: string
 }
 
 export function EndpointList({ projectId, endpoints, enrichments }: { projectId: string; endpoints: Endpoint[]; enrichments: Enrichment[] }) {
@@ -48,9 +49,9 @@ export function EndpointList({ projectId, endpoints, enrichments }: { projectId:
                     <Card key={`${ep.method}-${ep.path}-${idx}`} className="flex items-center justify-between p-4">
                         <div className="flex items-center gap-4">
                             <Badge variant="outline" className={`uppercase w-16 justify-center ${ep.method === 'get' ? 'bg-blue-100 text-blue-800' :
-                                    ep.method === 'post' ? 'bg-green-100 text-green-800' :
-                                        ep.method === 'put' ? 'bg-orange-100 text-orange-800' :
-                                            ep.method === 'delete' ? 'bg-red-100 text-red-800' : ''
+                                ep.method === 'post' ? 'bg-green-100 text-green-800' :
+                                    ep.method === 'put' ? 'bg-orange-100 text-orange-800' :
+                                        ep.method === 'delete' ? 'bg-red-100 text-red-800' : ''
                                 }`}>
                                 {ep.method}
                             </Badge>
@@ -100,6 +101,12 @@ function EnrichmentSheet({ projectId, endpoint, enrichment }: { projectId: strin
                         <Badge className="uppercase">{endpoint.method}</Badge>
                         <code className="text-sm bg-muted px-2 py-1 rounded">{endpoint.path}</code>
                     </div>
+                    {endpoint.description && (
+                        <div className="text-sm p-3 bg-muted/50 rounded-md border border-border/50">
+                            <strong>OpenAPI Description:</strong>
+                            <p className="text-muted-foreground mt-1 whitespace-pre-wrap">{endpoint.description}</p>
+                        </div>
+                    )}
                     <div className="grid gap-2">
                         <Label htmlFor="description">Description (Architecture/Business Logic)</Label>
                         <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} />

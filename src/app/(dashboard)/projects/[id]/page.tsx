@@ -11,12 +11,14 @@ import { Play } from "lucide-react"
 import { GenerateButton } from "@/components/project/generate-button"
 import { DownloadButton } from "@/components/project/download-button"
 
-export default async function ProjectPage({ params }: { params: { id: string } }) {
+export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth()
     if (!session?.user?.email) redirect("/login")
 
+    const { id } = await params
+
     const project = await prisma.project.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: {
             enrichments: true
         }
@@ -38,7 +40,8 @@ export default async function ProjectPage({ params }: { params: { id: string } }
                         endpoints.push({
                             method,
                             path,
-                            summary: (details as any).summary || (details as any).description
+                            summary: (details as any).summary || "No summary",
+                            description: (details as any).description || ""
                         });
                     }
                 }
