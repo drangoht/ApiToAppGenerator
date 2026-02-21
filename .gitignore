@@ -41,3 +41,12 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# sqlite
+*.db
+*.db-journal
+
+# dynamically generated projects
+/projects/
+debug-*.ts
+debug-*.txt
