@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Play } from "lucide-react"
 import { GenerateButton } from "@/components/project/generate-button"
 import { DownloadButton } from "@/components/project/download-button"
+import { PreviewPanel } from "@/components/project/preview-panel"
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth()
@@ -83,6 +84,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             ) : (
                 <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
                     <div className="lg:col-span-2 space-y-6">
+                        {project.status === 'READY' && (
+                            <PreviewPanel projectId={project.id} />
+                        )}
                         <Card>
                             <CardHeader>
                                 <CardTitle>API Specification</CardTitle>

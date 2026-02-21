@@ -52,7 +52,9 @@ export class GeneratorService {
         1. You MUST generate the full source code for the application. DO NOT use placeholders like "// implement here".
         2. You MUST explicitly generate EVERY SINGLE FILE that you import. If you import '@/store/use-cat-store', you MUST provide the code for 'src/store/use-cat-store.ts'. Hallucinated imports will break the build.
         3. You MUST provide a 'package.json' file including all third-party dependencies you used (e.g. zustand, axios, lucide-react).
-        4. Wrap each file in a special block exactly like this:
+        4. DO NOT generate 'next.config.ts', as it crashes older Next.js versions. If you need a config, generate 'next.config.mjs'.
+        5. Shadcn UI REQUIRES 'src/lib/utils.ts' with the 'cn' function. You MUST generate 'src/lib/utils.ts'.
+        6. Wrap each file in a special block exactly like this:
         
         <<<FILE:path/to/file>>>
         [file content]
@@ -128,8 +130,12 @@ export class GeneratorService {
         await fs.mkdir(projectDir, { recursive: true });
 
         while ((match = fileRegex.exec(text)) !== null) {
-            const filePath = match[1].trim();
+            let filePath = match[1].trim();
             const content = match[2].trim();
+
+            // Auto-correct bad LLM config names
+            if (filePath === 'next.config.ts') filePath = 'next.config.mjs';
+
             const fullPath = path.join(projectDir, filePath);
 
             // Ensure subdir exists
@@ -137,6 +143,39 @@ export class GeneratorService {
 
             await fs.writeFile(fullPath, content);
             console.log(`Wrote file: ${filePath}`);
+        }
+
+        // Prevent directory traversal bug where generated Next 14 app looks for parent ApiToAppGenerator next.config.ts
+        try {
+            await fs.access(path.join(projectDir, 'next.config.mjs'));
+        } catch {
+            try {
+                await fs.access(path.join(projectDir, 'next.config.js'));
+            } catch {
+                // If neither exists, write a default to stop upward directory traversal
+                const defaultNextConfig = `/** @type {import('next').NextConfig} */\nconst nextConfig = {};\nexport default nextConfig;`;
+                await fs.writeFile(path.join(projectDir, 'next.config.mjs'), defaultNextConfig);
+            }
+        }
+
+        // Ensure tsconfig.json has path aliases for @/* imports
+        try {
+            const tsconfigPath = path.join(projectDir, 'tsconfig.json');
+            let tsconfigStr = "{}";
+            try { tsconfigStr = await fs.readFile(tsconfigPath, 'utf8'); } catch { }
+
+            let tsconfig = JSON.parse(tsconfigStr || "{}");
+            if (!tsconfig.compilerOptions) tsconfig.compilerOptions = {};
+
+            tsconfig.compilerOptions.baseUrl = ".";
+            tsconfig.compilerOptions.paths = tsconfig.compilerOptions.paths || {};
+            if (!tsconfig.compilerOptions.paths["@/*"]) {
+                tsconfig.compilerOptions.paths["@/*"] = ["./src/*"];
+            }
+
+            await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
+        } catch (e) {
+            console.error("Failed to ensure tsconfig.json paths", e);
         }
     }
 }
