@@ -137,7 +137,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div>
-                                    <h3 className="text-lg font-medium mb-4">API to App Generator Context</h3>
+                                    <h3 className="text-lg font-medium mb-4">AppForge AI Context</h3>
                                     <div className="bg-blue-50/50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-6 text-sm flex gap-2 items-start">
                                         <div className="mt-0.5">ℹ️</div>
                                         <div>

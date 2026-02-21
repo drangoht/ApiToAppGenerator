@@ -58,7 +58,8 @@ export class GeneratorService {
         6. APP ROUTER STRICT RULE: ALL files inside 'src/app/' OR any file using React Hooks (useState, useEffect, useContext, useRef) MUST have the exact string literal "use client"; on the very first line of the file. DO NOT import it. It is a directive, not a function.
         7. ENV VAR RULE: When accessing environment variables with hyphens (e.g., 'x-api-key'), you MUST use bracket notation like process.env['x-api-key']. Do not use dot notation, as process.env.x-api-key evaluates as subtraction and crashes Javascript!
         8. IMAGE RULE: DO NOT use 'next/image' (import Image from 'next/image') for external images. Next.js crashes if external image domains are not manually whitelisted in next.config.mjs. You MUST use standard HTML <img> tags for all remote images.
-        9. Wrap each file in a special block exactly like this:
+        9. NAVIGATION RULE: You MUST add a "Return to Home" link (using next/link) on ALL child pages (any page other than src/app/page.tsx) so the user can easily navigate back to the main dashboard.
+        10. Wrap each file in a special block exactly like this:
         
         <<<FILE:path/to/file>>>
         [file content]
