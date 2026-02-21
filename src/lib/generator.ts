@@ -21,6 +21,7 @@ export class GeneratorService {
         this.openai = new OpenAI({
             apiKey: apiKey || process.env.OPENAI_API_KEY,
             baseURL: baseURL,
+            timeout: 240_000, // 4-minute explicit timeout
         });
     }
 
@@ -54,7 +55,10 @@ export class GeneratorService {
         3. You MUST provide a 'package.json' file including all third-party dependencies you used (e.g. zustand, axios, lucide-react).
         4. DO NOT generate 'next.config.ts', as it crashes older Next.js versions. If you need a config, generate 'next.config.mjs'.
         5. Shadcn UI REQUIRES 'src/lib/utils.ts' with the 'cn' function. You MUST generate 'src/lib/utils.ts'.
-        6. Wrap each file in a special block exactly like this:
+        6. APP ROUTER STRICT RULE: ALL files inside 'src/app/' OR any file using React Hooks (useState, useEffect, useContext, useRef) MUST have the exact string literal "use client"; on the very first line of the file. DO NOT import it. It is a directive, not a function.
+        7. ENV VAR RULE: When accessing environment variables with hyphens (e.g., 'x-api-key'), you MUST use bracket notation like process.env['x-api-key']. Do not use dot notation, as process.env.x-api-key evaluates as subtraction and crashes Javascript!
+        8. IMAGE RULE: DO NOT use 'next/image' (import Image from 'next/image') for external images. Next.js crashes if external image domains are not manually whitelisted in next.config.mjs. You MUST use standard HTML <img> tags for all remote images.
+        9. Wrap each file in a special block exactly like this:
         
         <<<FILE:path/to/file>>>
         [file content]
@@ -82,17 +86,30 @@ export class GeneratorService {
             }
         }
 
+        const envKeys = project.targetApiConfig ? Object.keys(JSON.parse(project.targetApiConfig)) : [];
+        const envHint = envKeys.length > 0
+            ? `\nAvailable Environment Variables (use these for authentication):\n${envKeys.map(k => `- process.env.${k}`).join('\n')}\n`
+            : "";
+
+        const appTitle = spec?.info?.title || project.name || "App";
+        const appDescription = spec?.info?.description || project.description || "";
+
         const userPrompt = `
+        You are building an application named: ${appTitle}
+        Project Goal/Description: ${project.description || "Not provided"}
+        API General Description: ${appDescription || "Not provided"}
+
         Here is the OpenAPI Specification for the application:
         ${JSON.stringify(spec, null, 2)}
         
         Endpoint Descriptions (Pay close attention to these for business logic):
         ${endpointSummaries}
-
+        ${envHint}
         Specific Instructions/User Enrichments:
-        ${enrichments.map(e => `- ${e.method} ${e.path}: ${e.instruction} (${e.description})`).join('\n')}
+        ${enrichments.length > 0 ? enrichments.map(e => `- ${e.method} ${e.path}: ${e.instruction} (${e.description})`).join('\n') : "None"}
 
         Please generate the application code now. Start with the API client/service layer, then components, then pages.
+        Make sure the UI reflects the Project Goal and API Description.
         `;
 
         // Call LLM
@@ -111,7 +128,7 @@ export class GeneratorService {
             });
 
             const generatedText = completion.choices[0].message.content || "";
-            await this.writeFiles(generatedText);
+            await this.writeFiles(generatedText, project);
 
             return { success: true, message: "Generation complete" };
 
@@ -121,14 +138,16 @@ export class GeneratorService {
         }
     }
 
-    private async writeFiles(text: string) {
-        const fileRegex = /<<<FILE:(.*?)>>>([\s\S]*?)<<<END>>>/g;
-        let match;
+    private async writeFiles(text: string, project?: any) {
         const projectDir = path.join(process.cwd(), 'projects', this.projectId, 'generated');
-
-        // Ensure directory exists
         await fs.mkdir(projectDir, { recursive: true });
 
+        const fileRegex = /<<<FILE:(.*?)>>>([\s\S]*?)<<<END>>>/g;
+        // Save raw LLM output for debugging
+        await fs.writeFile(path.join(projectDir, 'llm-output.txt'), text);
+
+        let match;
+        let filesWritten = 0;
         while ((match = fileRegex.exec(text)) !== null) {
             let filePath = match[1].trim();
             const content = match[2].trim();
@@ -143,6 +162,82 @@ export class GeneratorService {
 
             await fs.writeFile(fullPath, content);
             console.log(`Wrote file: ${filePath}`);
+            filesWritten++;
+        }
+
+        // Force a guaranteed-safe Next.js config. LLMs routinely hallucinate invalid next.config.js or mjs files
+        // (e.g. putting CommonJS module.exports into an ES Module .mjs file, which crashes Node instantly).
+        try {
+            await fs.rm(path.join(projectDir, 'next.config.js'), { force: true });
+        } catch (e) { }
+        try {
+            await fs.rm(path.join(projectDir, 'next.config.ts'), { force: true });
+        } catch (e) { }
+
+        // Enforce App Router: Next.js crashes if BOTH 'app' and 'pages' directories exist.
+        // LLMs frequently hallucinate both. We explicitly delete the Pages router.
+        try {
+            await fs.rm(path.join(projectDir, 'src', 'pages'), { recursive: true, force: true });
+        } catch (e) { }
+        try {
+            await fs.rm(path.join(projectDir, 'pages'), { recursive: true, force: true });
+        } catch (e) { }
+
+        const defaultNextConfig = `/** @type {import('next').NextConfig} */\nconst nextConfig = { typescript: { ignoreBuildErrors: true }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;`;
+        await fs.writeFile(path.join(projectDir, 'next.config.mjs'), defaultNextConfig);
+
+        // Force inject common dependencies that the LLM often uses but forgets to include in package.json
+        try {
+            const packageJsonPath = path.join(projectDir, 'package.json');
+            let pkgStr = "{}";
+            try { pkgStr = await fs.readFile(packageJsonPath, 'utf8'); } catch { }
+            let pkg = JSON.parse(pkgStr || "{}");
+
+            if (!pkg.dependencies) pkg.dependencies = {};
+            if (!pkg.devDependencies) pkg.devDependencies = {};
+
+            // Remove hallucinatory invalid packages that break npm install
+            const invalidPackages = ["shadcn/ui", "shadcn", "@shadcn/ui"];
+            for (const invalidPkg of invalidPackages) {
+                delete pkg.dependencies[invalidPkg];
+                delete pkg.devDependencies[invalidPkg];
+            }
+
+            // Force override core Next.js 14 / React 18 dependencies.
+            // If the LLM generates Next.js 12 (pre-App Router), the preview will completely crash.
+            const forceDeps: Record<string, string> = {
+                "next": "^14.2.0",
+                "react": "^18.2.0",
+                "react-dom": "^18.2.0",
+                "axios": "^1.6.0",
+                "zustand": "^4.4.0",
+                "lucide-react": "^0.292.0",
+                "clsx": "^2.0.0",
+                "tailwind-merge": "^2.0.0",
+                "date-fns": "^3.0.0",
+                "@radix-ui/react-icons": "^1.3.0",
+                "@radix-ui/react-slot": "^1.0.0"
+            };
+
+            const forceDevDeps: Record<string, string> = {
+                "typescript": "^5.0.0",
+                "@types/node": "^20.0.0",
+                "@types/react": "^18.2.0",
+                "@types/react-dom": "^18.2.0",
+                "postcss": "^8.4.0",
+                "tailwindcss": "^3.4.0"
+            };
+
+            for (const [dep, version] of Object.entries(forceDeps)) {
+                pkg.dependencies[dep] = version; // Actively overwrite bad versions
+            }
+            for (const [dep, version] of Object.entries(forceDevDeps)) {
+                pkg.devDependencies[dep] = version;
+            }
+
+            await fs.writeFile(packageJsonPath, JSON.stringify(pkg, null, 2));
+        } catch (e) {
+            console.error("Failed to inject common dependencies", e);
         }
 
         // Prevent directory traversal bug where generated Next 14 app looks for parent ApiToAppGenerator next.config.ts
@@ -176,6 +271,23 @@ export class GeneratorService {
             await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
         } catch (e) {
             console.error("Failed to ensure tsconfig.json paths", e);
+        }
+
+        // Inject target API keys
+        if (project && project.targetApiConfig) {
+            try {
+                const configObj = JSON.parse(project.targetApiConfig);
+                let envContent = "";
+                for (const [key, value] of Object.entries(configObj)) {
+                    envContent += `${key}="${value}"\n`;
+                }
+                if (envContent) {
+                    await fs.writeFile(path.join(projectDir, '.env.local'), envContent);
+                    console.log(`Injected .env.local into generated project.`);
+                }
+            } catch (e) {
+                console.error("Failed to inject target API configuration", e);
+            }
         }
     }
 }

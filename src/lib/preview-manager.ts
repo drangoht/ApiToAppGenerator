@@ -32,7 +32,7 @@ async function findAvailablePort(startPort: number = 3100): Promise<number> {
                 server.close();
                 resolve(false);
             });
-            server.listen(port, '127.0.0.1');
+            server.listen(port);
         });
     };
 
@@ -87,15 +87,53 @@ export const PreviewManager = {
 
     async runInstallationAndStart(instance: PreviewInstance, cwd: string) {
         try {
-            // Check if node_modules already exists to skip install
+            // Check if we need to run npm install based on package.json modification time
             let needsInstall = true;
             try {
-                await fs.access(path.join(cwd, 'node_modules'));
-                needsInstall = false;
+                const nodeModulesStat = await fs.stat(path.join(cwd, 'node_modules'));
+                const pkgJsonStat = await fs.stat(path.join(cwd, 'package.json'));
+                // If node_modules is newer than package.json, we can skip install.
+                // Otherwise (e.g. Generator injected new deps into package.json), we must install.
+                if (nodeModulesStat.mtimeMs > pkgJsonStat.mtimeMs) {
+                    needsInstall = false;
+                }
             } catch { }
 
             const logFile = path.join(cwd, 'preview.log');
             await fs.writeFile(logFile, `--- Preview Start ---\n`);
+
+            // Ensure a package.json exists to prevent npm commands from traversing UP the directory tree
+            // and accidentally double-starting the outer ApiToAppGenerator Next.js app.
+            try {
+                await fs.access(path.join(cwd, 'package.json'));
+            } catch {
+                await fs.writeFile(path.join(cwd, 'package.json'), JSON.stringify({
+                    "name": "generated-app",
+                    "version": "0.1.0",
+                    "private": true,
+                    "scripts": {
+                        "dev": "next dev",
+                        "build": "next build",
+                        "start": "next start"
+                    },
+                    "dependencies": {
+                        "next": "^14.0.0",
+                        "react": "^18.2.0",
+                        "react-dom": "^18.2.0",
+                        "lucide-react": "latest",
+                        "tailwind-merge": "latest",
+                        "clsx": "latest"
+                    },
+                    "devDependencies": {
+                        "@types/node": "latest",
+                        "@types/react": "latest",
+                        "@types/react-dom": "latest",
+                        "postcss": "latest",
+                        "tailwindcss": "latest",
+                        "typescript": "latest"
+                    }
+                }, null, 2));
+            }
 
             if (needsInstall) {
                 instance.status = 'INSTALLING';
@@ -110,9 +148,16 @@ export const PreviewManager = {
                 });
             }
 
-            // Start dev server
+            // Always clear the Next.js build cache to prevent Turbopack corruption crashes
+            try {
+                await fs.rm(path.join(cwd, '.next'), { recursive: true, force: true });
+            } catch (e) {
+                // Ignore missing directory
+            }
+
+            // Start dev server (forcing IPv4 binding)
             instance.status = 'STARTING';
-            const devProcess = spawn('npm', ['run', 'dev', '--', '-p', instance.port!.toString()], { cwd, shell: true });
+            const devProcess = spawn('npm', ['run', 'dev', '--', '-p', instance.port!.toString(), '-H', '127.0.0.1'], { cwd, shell: true });
             instance.process = devProcess;
 
             devProcess.stdout?.on('data', async (data) => {

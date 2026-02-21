@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus } from "lucide-react"
+import { DeleteProjectButton } from "@/components/project/delete-project-button"
 
 export default async function DashboardPage() {
     const session = await auth()
@@ -48,10 +49,11 @@ export default async function DashboardPage() {
                             <CardContent>
                                 <p className="text-sm text-muted-foreground">Status: <span className="font-medium">{project.status}</span></p>
                             </CardContent>
-                            <CardFooter>
-                                <Button variant="secondary" asChild className="w-full">
+                            <CardFooter className="flex gap-2">
+                                <Button variant="secondary" asChild className="flex-1">
                                     <Link href={`/projects/${project.id}`}>Open</Link>
                                 </Button>
+                                <DeleteProjectButton projectId={project.id} />
                             </CardFooter>
                         </Card>
                     ))

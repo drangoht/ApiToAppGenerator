@@ -3,6 +3,7 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 const createProjectSchema = z.object({
@@ -41,4 +42,29 @@ export async function createProject(prevState: any, formData: FormData) {
     }
 
     redirect(`/projects/${project.id}`)
+}
+
+
+export async function updateProjectDescription(projectId: string, description: string) {
+    const session = await auth();
+    if (!session?.user?.email) return { error: 'Unauthorized' };
+
+    try {
+        const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+        if (!user) return { error: 'User not found' };
+
+        const project = await prisma.project.findUnique({ where: { id: projectId } });
+        if (!project || project.ownerId !== user.id) return { error: 'Project not found or unauthorized' };
+
+        await prisma.project.update({
+            where: { id: projectId },
+            data: { description }
+        });
+
+        revalidatePath(`/projects/${projectId}`);
+        return { success: true };
+    } catch (e) {
+        console.error('Failed to update project description', e);
+        return { error: 'Database Error' };
+    }
 }

@@ -18,17 +18,18 @@ model User {
 }
 
 model Project {
-  id             String                @id @default(cuid())
-  name           String
-  description    String?
-  ownerId        String
-  owner          User                  @relation(fields: [ownerId], references: [id])
-  openApiSpec    String? // JSON string
-  llmConfig      String? // JSON string
-  status         String                @default("DRAFT") // DRAFT, GENERATING, READY, ERROR
-  enrichments    EndpointEnrichment[]
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  id              String                @id @default(cuid())
+  name            String
+  description     String?
+  ownerId         String
+  owner           User                  @relation(fields: [ownerId], references: [id])
+  openApiSpec     String? // JSON string
+  llmConfig       String? // JSON string
+  targetApiConfig String? // JSON string
+  status          String                @default("DRAFT") // DRAFT, GENERATING, READY, ERROR
+  enrichments     EndpointEnrichment[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 }
 
 model EndpointEnrichment {

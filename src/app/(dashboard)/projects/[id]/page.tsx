@@ -11,6 +11,12 @@ import { Play } from "lucide-react"
 import { GenerateButton } from "@/components/project/generate-button"
 import { DownloadButton } from "@/components/project/download-button"
 import { PreviewPanel } from "@/components/project/preview-panel"
+import { TargetApiConfigForm } from "@/components/project/target-api-config-form"
+import { DeleteProjectButton } from "@/components/project/delete-project-button"
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+
+import { EditProjectDescription } from "@/components/project/edit-project-description"
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth()
@@ -30,10 +36,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     const hasSpec = !!project.openApiSpec
     let endpoints: any[] = [];
     let llmConfig = {};
+    let specInfo: { title?: string, description?: string, version?: string } | null = null;
 
     if (hasSpec) {
         try {
             const spec = JSON.parse(project.openApiSpec!);
+            specInfo = spec.info || null;
             const paths = spec.paths || {};
             for (const [path, methods] of Object.entries(paths)) {
                 for (const [method, details] of Object.entries(methods as any)) {
@@ -58,12 +66,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         } catch (e) { }
     }
 
+    let targetApiConfig = {};
+    if (project.targetApiConfig) {
+        try {
+            targetApiConfig = JSON.parse(project.targetApiConfig);
+        } catch (e) { }
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-                    <p className="text-muted-foreground">{project.description}</p>
+                    <EditProjectDescription projectId={project.id} initialDescription={project.description || ""} />
                 </div>
                 <div className="flex items-center gap-2">
                     <Badge variant={project.status === 'DRAFT' ? 'secondary' : 'default'}>
@@ -74,7 +89,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                             <GenerateButton projectId={project.id} disabled={project.status === 'GENERATING'} />
                             {project.status === 'READY' && <DownloadButton projectId={project.id} />}
                         </div>
-                    )}    </div>
+                    )}
+                    <div className="ml-4 pl-4 border-l">
+                        <DeleteProjectButton projectId={project.id} />
+                    </div>
+                </div>
             </div>
 
             {!hasSpec ? (
@@ -90,6 +109,18 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                         <Card>
                             <CardHeader>
                                 <CardTitle>API Specification</CardTitle>
+                                {specInfo && (
+                                    <div className="mt-4 text-sm text-muted-foreground border-b pb-4">
+                                        {specInfo.title && <p className="text-lg font-semibold text-foreground mb-2">{specInfo.title} {specInfo.version ? `(v${specInfo.version})` : ''}</p>}
+                                        {specInfo.description && (
+                                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                    {specInfo.description}
+                                                </ReactMarkdown>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </CardHeader>
                             <CardContent>
                                 <div className="max-h-[500px] overflow-auto">
@@ -104,8 +135,22 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                             <CardHeader>
                                 <CardTitle>Configuration</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <LlmConfigForm projectId={project.id} initialConfig={llmConfig} />
+                            <CardContent className="space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-medium mb-4">API to App Generator Context</h3>
+                                    <div className="bg-blue-50/50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-6 text-sm flex gap-2 items-start">
+                                        <div className="mt-0.5">ℹ️</div>
+                                        <div>
+                                            <p className="font-semibold mb-1">Model Recommendation</p>
+                                            <p className="opacity-90 leading-relaxed">Generating a full Next.js App Router application is highly complex. For reliable syntax and logic, we strongly recommend using <b>Anthropic Claude 3.5 Sonnet</b> or <b>OpenAI GPT-4o</b>. Weaker models will frequently hallucinate invalid Next.js routing patterns or broken React hooks.</p>
+                                        </div>
+                                    </div>
+                                    <LlmConfigForm projectId={project.id} initialConfig={llmConfig} />
+                                </div>
+                                <div className="border-t pt-6">
+                                    <h3 className="text-lg font-medium mb-4">Target App Environment Variables</h3>
+                                    <TargetApiConfigForm projectId={project.id} initialConfig={targetApiConfig} />
+                                </div>
                             </CardContent>
                         </Card>
 
