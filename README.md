@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AppForge (formerly API-to-App Generator)
 
-## Getting Started
+AppForge is a powerful, AI-driven platform that instantly transforms raw OpenAPI Specifications into fully functional, stunning, and deployable Next.js applications.
 
-First, run the development server:
+By simply uploading a `swagger.json` or `openapi.yaml`, AppForge's intelligent generation engine parses the endpoints and uses advanced Large Language Models to write a complete frontend architecture—including API clients, state management, and beautiful UI components—specifically tailored to interact with your target API.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+![AppForge Logo](./public/logo.png "AppForge")
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Instant App Generation:** Upload an OpenAPI spec and get a working Next.js App Router application in minutes.
+- **AI-Powered Architecture:** Uses leading LLMs (like GPT-4o or Claude 3.5 Sonnet) to intuitively design and write standard React code.
+- **Endpoint Enrichment:** Add custom English instructions or business rules to specific API endpoints before generation to guide the AI's logic.
+- **Live Preview:** Instantly preview the generated application running in a sandboxed Next.js server directly within the dashboard.
+- **Code Export:** Download the fully generated source code as a `.zip` file, ready to be deployed to Vercel or your infrastructure.
+- **Premium UI/UX:** A stunning, vibrant dark/light native UI featuring glass-morphism and smooth animations.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🛠️ Tech Stack & Packages Used
 
-To learn more about Next.js, take a look at the following resources:
+AppForge is built to be modern, fast, and scalable. Here is a breakdown of the core technologies powering the platform:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 1. Core Framework
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **[Next.js 14 (App Router)](https://nextjs.org/):** The foundation of the platform. We utilize React Server Components for robust data fetching and enhanced security, and standard Client Components for dynamic dashboard interactivity.
+- **[React 18](https://react.dev/):** Provides the component-driven architecture for both the AppForge generator and the applications it creates.
 
-## Deploy on Vercel
+### 2. Styling & UI Design System
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **[Tailwind CSS](https://tailwindcss.com/):** For rapid, utility-first styling and creating the custom AppForge HSL gradient color palette.
+- **[Shadcn UI](https://ui.shadcn.com/):** A collection of highly customizable, accessible components. Used extensively for Dialogs, Dropdowns, Forms, and Cards.
+- **[Lucide React](https://lucide.dev/):** A beautiful, consistent icon set used throughout the dashboard.
+- **[Next-Themes](https://github.com/pacocoursey/next-themes):** Seamless, flicker-free dark/light mode switching hooked directly into Tailwind's dark class system.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 3. Database & Authentication
+
+- **[Prisma ORM](https://www.prisma.io/):** Type-safe database client. We use Prisma to manage User accounts, Projects, OpenAPI specs, and Enrichment rules.
+- **[SQLite](https://sqlite.org/):** The default lightweight database for easy local setup, though Prisma can be trivially swapped to PostgreSQL.
+- **[NextAuth.js (Auth.js)](https://next-auth.js.org/):** Secure, credential-based authentication system safeguarding user projects and generations.
+
+### 4. AI & Integration Logic
+
+- **[OpenAI SDK](https://github.com/openai/openai-node):** The primary client used to communicate with LLMs. We leverage strict system prompts, context injection, and strict output requirements to force the model to write valid, deployable App Router code.
+- **[Zod](https://zod.dev/):** TypeScript-first schema declaration used heavily in Next.js Server Actions to securely validate user inputs before hitting the database.
+
+---
+
+## 🧠 How It Works (The Generation Pipeline)
+
+1. **Parsing Phase:** When a user uploads an OpenAPI spec, AppForge parses the YAML/JSON to extract available endpoints, methods, parameters, and descriptions.
+2. **Context Injection Phase:** The user has the opportunity to add custom "Enrichments" to specific endpoints, and supply target API authentication keys (which are securely injected into the generated app's `.env.local` file).
+3. **Prompt Engineering:** The `GeneratorService` builds a massive, highly-specific system prompt. It enforces strict Next.js App Router rules (e.g., proper usage of `"use client"`, avoiding `next/image` for dynamic external URLs, and using bracket notation for environment variables).
+4. **LLM Execution:** The context is sent to the LLM (GPT-4o or Claude 3.5 Sonnet highly recommended for complex syntax reliability). The LLM responds with a structured block of code containing every single file required for the application.
+5. **File Hydration:** AppForge intercepts the LLM output, splits it into localized files within a secure `projects/{id}/generated` directory, and actively overwrites the `package.json` and `next.config.mjs` to inject failsafes and ensure the generated app doesn't crash the Node process.
+6. **Live Preview:** A dynamic API route allows the user to spin up an independent Next.js preview server executing against the generated folder, proxying the output directly to an iframe in the dashboard.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18.17+
+- npm or pnpm
+- An OpenAI or OpenRouter API Key
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/drangoht/ApiToAppGenerator.git
+   cd ApiToAppGenerator
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up your environment variables:
+   Copy the example environment file and insert your API keys and Auth secrets.
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Initialize the database:
+   ```bash
+   npx prisma db push
+   npx prisma generate
+   ```
+
+5. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. Register an account and start forging applications!
