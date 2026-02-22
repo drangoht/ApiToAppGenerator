@@ -1,5 +1,7 @@
 # AppForge (formerly API-to-App Generator)
 
+**🌐 Live Demo:** [https://appforge.thognard.net/](https://appforge.thognard.net/)
+
 AppForge is a powerful, AI-driven platform that instantly transforms raw OpenAPI Specifications into fully functional, stunning, and deployable Next.js applications.
 
 By simply uploading a `swagger.json` or `openapi.yaml`, AppForge's intelligent generation engine parses the endpoints and uses advanced Large Language Models to write a complete frontend architecture—including API clients, state management, and beautiful UI components—specifically tailored to interact with your target API.
