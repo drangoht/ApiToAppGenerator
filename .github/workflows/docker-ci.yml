@@ -2,7 +2,7 @@ name: Docker CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "test-suite" ]
   pull_request:
     branches: [ "master" ]
 
@@ -12,6 +12,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest Suite
+        run: npm run test
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
