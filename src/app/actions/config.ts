@@ -6,8 +6,8 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 const configSchema = z.object({
-    model: z.string(),
-    apiKey: z.string().optional(),
+    model: z.string().max(100, "Model name is too long"),
+    apiKey: z.string().max(500, "API Key is too long").optional(),
 })
 
 export async function saveLlmConfig(projectId: string, prevState: any, formData: FormData) {

@@ -8,9 +8,9 @@ import { z } from 'zod'
 import { redirect } from 'next/navigation'
 
 const registerSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
-    name: z.string().min(2),
+    email: z.string().email().max(100, "Email cannot exceed 100 characters"),
+    password: z.string().min(6).max(100, "Password length cannot exceed 100 characters"),
+    name: z.string().min(2).max(50, "Name cannot exceed 50 characters"),
 })
 
 export type RegisterState = {

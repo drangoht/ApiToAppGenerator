@@ -16,6 +16,10 @@ export async function uploadOpenApiSpec(projectId: string, formData: FormData) {
         return { message: "No file provided" }
     }
 
+    if (file.size > 5 * 1024 * 1024) {
+        return { message: "File size exceeds 5MB security limit" }
+    }
+
     const content = await file.text()
 
     let parsedSpec;

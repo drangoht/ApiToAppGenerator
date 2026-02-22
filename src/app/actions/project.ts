@@ -56,9 +56,16 @@ export async function createProject(prevState: CreateProjectState, formData: For
 }
 
 
+const updateProjectSchema = z.object({
+    description: z.string().max(500, "Description cannot exceed 500 characters.").optional().nullable(),
+})
+
 export async function updateProjectDescription(projectId: string, description: string) {
     const session = await auth();
     if (!session?.user?.email) return { error: 'Unauthorized' };
+
+    const validatedFields = updateProjectSchema.safeParse({ description })
+    if (!validatedFields.success) return { error: "Invalid description length." }
 
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } });
@@ -69,7 +76,7 @@ export async function updateProjectDescription(projectId: string, description: s
 
         await prisma.project.update({
             where: { id: projectId },
-            data: { description }
+            data: { description: validatedFields.data.description ?? "" }
         });
 
         revalidatePath(`/projects/${projectId}`);
