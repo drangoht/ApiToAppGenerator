@@ -164,6 +164,11 @@ export const PreviewManager = {
             // the dev server will resolve the config as undefined and crash internally.
             // Next 14.2.0 BUG: We MUST include tsconfigPath: "tsconfig.json" explicitly, otherwise
             // the dev server crashes with ERR_INVALID_ARG_TYPE in verify-typescript-setup.js.
+            // CRITICAL: Delete any .js/.ts/.cjs config files the LLM might have generated, 
+            // as Next.js prioritizes those over .mjs and will bypass our failsafe!
+            await fs.rm(path.join(cwd, 'next.config.js'), { force: true });
+            await fs.rm(path.join(cwd, 'next.config.ts'), { force: true });
+            await fs.rm(path.join(cwd, 'next.config.cjs'), { force: true });
             const nextConfigContent = `/** @type {import('next').NextConfig} */\nconst nextConfig = { typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;\n`;
             await fs.writeFile(path.join(cwd, 'next.config.mjs'), nextConfigContent);
 
