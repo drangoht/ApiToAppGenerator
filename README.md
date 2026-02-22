@@ -57,6 +57,30 @@ AppForge is built to be modern, fast, and scalable. Here is a breakdown of the c
 
 ---
 
+## 📖 User Guide
+
+### 1. Create a New Project
+Begin by navigating to the Dashboard and clicking the **"New Project"** button in the top right corner. Give your project a descriptive name and summary.
+
+![AppForge Dashboard Context](./public/docs/dashboard.png)
+
+### 2. Upload OpenAPI Specification
+Once inside your newly created project, upload a valid JSON or YAML **OpenAPI 3.0+ Specification**. This definition acts as the absolute source of truth that the AI will use to generate the React components, network layers, and forms.
+
+### 3. Enrich and Configure AI
+AppForge parses your specification and displays all valid REST endpoints. You can inject custom instructions into specific API paths to forcefully guide the AI's rendering logic.
+
+Finally, select your target LLM in the Configuration panel. We strongly recommend using high-parameter models like **Claude 3.5 Sonnet** or **GPT-4o** for robust Next.js generation.
+
+![AppForge Live Spec Generator Context](./public/docs/editor.png)
+
+### 4. Generate, Preview, and Download
+Click **Generate Application**. AppForge will efficiently minify your spec to conserve tokens, compile an extensive system prompt covering complex framework routing rules, and execute the completion.
+
+Once finished, you can test the application dynamically via the built-in isolated sandbox preview. However, for a complete lag-free experience, it is heavily recommended to click **Download Code** and launch the repository natively via `npm run dev`.
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
