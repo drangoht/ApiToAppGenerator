@@ -25,14 +25,13 @@ async function findAvailablePort(startPort: number = 3100): Promise<number> {
                 if (err.code === 'EADDRINUSE') {
                     resolve(true);
                 } else {
-                    resolve(false);
+                    resolve(true); // Safer to assume busy on other errors
                 }
             });
             server.once('listening', () => {
-                server.close();
-                resolve(false);
+                server.close(() => resolve(false));
             });
-            server.listen(port);
+            server.listen(port, '127.0.0.1');
         });
     };
 
