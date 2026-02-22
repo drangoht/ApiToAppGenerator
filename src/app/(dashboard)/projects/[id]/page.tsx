@@ -104,7 +104,37 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
                     <div className="lg:col-span-2 space-y-6">
                         {project.status === 'READY' && (
-                            <PreviewPanel projectId={project.id} />
+                            <>
+                                <Card className="border-green-200 dark:border-green-900 shadow-sm">
+                                    <CardHeader className="bg-green-50/50 dark:bg-green-900/10 pb-4">
+                                        <CardTitle className="text-xl flex items-center gap-2 text-green-800 dark:text-green-300">
+                                            <span>💻 Run Locally (Recommended)</span>
+                                            <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 border-none ml-auto">Best Experience</Badge>
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-6 space-y-4">
+                                        <div className="text-sm text-muted-foreground space-y-3">
+                                            <p>
+                                                For the most stable, feature-complete experience without container constraints, we strongly recommend deploying the generated application directly on your local machine.
+                                            </p>
+                                            <div className="bg-muted/50 p-4 rounded-md font-mono text-sm border space-y-2">
+                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>unzip generated-app.zip</span></div>
+                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>cd generated-app</span></div>
+                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>npm install</span></div>
+                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>npm run dev</span></div>
+                                            </div>
+                                            <p className="text-xs">
+                                                <b className="text-foreground">Note on Preview:</b> The built-in sandbox preview below operates in an isolated Docker sub-environment. Next.js App Router applications are exceedingly complex to sandbox dynamically, and the live preview may occasionally exhibit routing bugs, hot-reloading failures, or compiler crashes that do <b>not</b> exist in the actual downloaded code.
+                                            </p>
+                                        </div>
+                                        <div className="pt-2">
+                                            <DownloadButton projectId={project.id} className="w-full sm:w-auto font-medium" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <PreviewPanel projectId={project.id} />
+                            </>
                         )}
                         <Card>
                             <CardHeader>
