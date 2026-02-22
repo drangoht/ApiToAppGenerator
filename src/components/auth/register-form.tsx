@@ -1,6 +1,6 @@
 'use client'
 
-import { register } from '@/app/actions/auth'
+import { register, type RegisterState } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,8 +10,8 @@ import { useFormStatus } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
-const initialState = {
-    message: '',
+const initialState: RegisterState = {
+    message: null,
     errors: {},
 }
 

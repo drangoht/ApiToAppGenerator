@@ -95,4 +95,21 @@ AppForge is built to be modern, fast, and scalable. Here is a breakdown of the c
    npm run dev
    ```
 
+### Running with Docker
+
+AppForge includes a production-ready `docker-compose` setup that packages the Next.js App Router and maintains persistent local volumes out of the box.
+
+1. Make sure Docker Desktop is installed and running on your machine.
+2. Build and start the container:
+   ```bash
+   docker-compose up --build
+   ```
+3. The platform will automatically boot up and become accessible on port 3000.
+4. To safely stop the container when you are done:
+   ```bash
+   docker-compose down
+   ```
+
+---
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. Register an account and start forging applications!

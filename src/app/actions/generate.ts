@@ -8,14 +8,9 @@ import { revalidatePath } from "next/cache"
 export async function generateAppAction(projectId: string) {
     const session = await auth()
 
-    // Dump to file for debugging
-    const fs = require('fs');
-    fs.appendFileSync('debug-auth.txt', `\n--- GENERATE ACTION ---\nSession: ${JSON.stringify(session)}\n`);
-
     if (!session?.user?.email) return { message: "Unauthorized" }
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    fs.appendFileSync('debug-auth.txt', `DB User Found: ${!!user}\n`);
 
     if (!user) return { message: "User not found" }
 

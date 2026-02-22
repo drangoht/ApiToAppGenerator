@@ -13,6 +13,15 @@ const registerSchema = z.object({
     name: z.string().min(2),
 })
 
+export type RegisterState = {
+    errors?: {
+        name?: string[];
+        email?: string[];
+        password?: string[];
+    };
+    message?: string | null;
+};
+
 export async function authenticate(prevState: string | undefined, formData: FormData) {
     try {
         await signIn('credentials', {
@@ -33,7 +42,7 @@ export async function authenticate(prevState: string | undefined, formData: Form
     }
 }
 
-export async function register(prevState: any, formData: FormData) {
+export async function register(prevState: RegisterState, formData: FormData): Promise<RegisterState> {
     const validatedFields = registerSchema.safeParse({
         email: formData.get('email'),
         password: formData.get('password'),
@@ -43,6 +52,7 @@ export async function register(prevState: any, formData: FormData) {
     if (!validatedFields.success) {
         return {
             errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Missing Fields. Failed to Register.'
         }
     }
 

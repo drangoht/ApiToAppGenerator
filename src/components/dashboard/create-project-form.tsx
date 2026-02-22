@@ -1,6 +1,6 @@
 'use client'
 
-import { createProject } from '@/app/actions/project'
+import { createProject, type CreateProjectState } from '@/app/actions/project'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 
-const initialState = {
-    message: '',
+const initialState: CreateProjectState = {
+    message: null,
     errors: {},
 }
 

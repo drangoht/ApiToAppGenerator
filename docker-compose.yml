@@ -1,0 +1,20 @@
+services:
+  appforge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: appforge_web
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - AUTH_TRUST_HOST=true
+      - AUTH_SECRET=appforge_super_secret_key_123
+      - DATABASE_URL=file:./dev.db
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      # Persist the local SQLite DB so users/projects aren't wiped on restart
+      - ./prisma/dev.db:/app/prisma/dev.db
+      # Persist the generated Next.js code folders
+      - ./projects:/app/projects
+    restart: unless-stopped

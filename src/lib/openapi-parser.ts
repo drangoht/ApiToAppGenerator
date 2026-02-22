@@ -2,7 +2,7 @@ import SwaggerParser from "@apidevtools/swagger-parser";
 
 export async function parseOpenApiSpec(content: string | object) {
     try {
-        const api = await SwaggerParser.validate(content);
+        const api = await SwaggerParser.validate(content as any);
         return api;
     } catch (err) {
         console.error("Error parsing OpenAPI spec:", err);

@@ -11,7 +11,15 @@ const createProjectSchema = z.object({
     description: z.string().optional(),
 })
 
-export async function createProject(prevState: any, formData: FormData) {
+export type CreateProjectState = {
+    errors?: {
+        name?: string[];
+        description?: string[];
+    };
+    message?: string | null;
+};
+
+export async function createProject(prevState: CreateProjectState, formData: FormData): Promise<CreateProjectState> {
     const session = await auth()
     if (!session?.user?.email) return { message: "Unauthorized" }
 
@@ -21,7 +29,10 @@ export async function createProject(prevState: any, formData: FormData) {
     })
 
     if (!validatedFields.success) {
-        return { errors: validatedFields.error.flatten().fieldErrors }
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: "Missing or invalid fields."
+        }
     }
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email } })
