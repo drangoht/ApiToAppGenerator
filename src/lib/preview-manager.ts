@@ -162,7 +162,9 @@ export const PreviewManager = {
             // Ensure next.config.mjs actually exports its configuration.
             // If the LLM just wrote `const nextConfig = {}` without `export default`, 
             // the dev server will resolve the config as undefined and crash internally.
-            const nextConfigContent = `/** @type {import('next').NextConfig} */\nconst nextConfig = { typescript: { ignoreBuildErrors: true }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;\n`;
+            // Next 14.2.0 BUG: We MUST include tsconfigPath: "tsconfig.json" explicitly, otherwise
+            // the dev server crashes with ERR_INVALID_ARG_TYPE in verify-typescript-setup.js.
+            const nextConfigContent = `/** @type {import('next').NextConfig} */\nconst nextConfig = { typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;\n`;
             await fs.writeFile(path.join(cwd, 'next.config.mjs'), nextConfigContent);
 
             // Ensure valid postcss and tailwind configs exist to prevent CSS bundler crashes

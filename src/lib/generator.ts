@@ -132,7 +132,7 @@ export class GeneratorService {
         1. You MUST generate the full source code for the application. DO NOT use placeholders like "// implement here".
         2. You MUST explicitly generate EVERY SINGLE FILE that you import.
         3. You MUST provide a 'package.json' file including all third-party dependencies you used.
-        4. You MUST generate 'next.config.mjs' with 'export default { typescript: { ignoreBuildErrors: true }, eslint: { ignoreDuringBuilds: true } };'
+        4. You MUST generate 'next.config.mjs' with 'export default { typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" }, eslint: { ignoreDuringBuilds: true } };'
         5. You MUST generate 'tailwind.config.ts' and 'postcss.config.mjs' correctly exported to prevent CSS bundler crashes.
         6. You MUST generate a valid 'tsconfig.json' with proper paths ('@/*': ['./src/*']).
         7. You MUST generate 'src/app/layout.tsx' and 'src/app/page.tsx'. Without a root layout, the Next.js dev server will crash with ERR_INVALID_ARG_TYPE.
