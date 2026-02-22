@@ -59,6 +59,16 @@ AppForge is built to be modern, fast, and scalable. Here is a breakdown of the c
 
 ---
 
+## 🛡️ Security & Hardening (OWASP Standards)
+
+AppForge takes security seriously. The platform's architecture acts dynamically on raw user input and large parsing payloads. To mitigate injection and exhaustion vectors, the following robust defenses have been implemented across the backend server actions:
+
+1. **SQL Injection (SQLi) Prevention:** All form mutations implicitly compile through Prisma ORM to rigorously enforced parameterized SQL queries. There are zero instances of dynamic raw SQL execution.
+2. **Cross-Site Scripting (XSS) Mitigation:** The Next.js React component tree has been audited to strictly rely on native JSX variable auto-escaping. There is zero usage of `dangerouslySetInnerHTML`, effectively neutralizing rogue payload executions generated from untyped LLM output or OpenAPI files.
+3. **Payload DoS & Memory Exhaustion Restrictions:** AppForge employs rigorous `Zod` schema boundaries. All Next.js Server Actions enforce stringent character limits (`.max()`) on database writes (including passwords, tokens, API properties, etc.), and file uploads enforce a rigid cap of **5MB** prior to triggering V8 memory buffer streaming.
+
+---
+
 ## 📖 User Guide
 
 ### 1. Create a New Project
