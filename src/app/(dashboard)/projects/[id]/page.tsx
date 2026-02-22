@@ -66,12 +66,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         } catch (e) { }
     }
 
-    let targetApiConfig = {};
-    if (project.targetApiConfig) {
-        try {
-            targetApiConfig = JSON.parse(project.targetApiConfig);
-        } catch (e) { }
-    }
+    const targetApiConfig = project.targetApiConfig ? JSON.parse(project.targetApiConfig) : {};
+
+    // The exact zip filename spawned by the /download API route
+    const zipName = `${project.name.replace(/\s+/g, '_')}_generated.zip`;
+    const folderName = `${project.name.replace(/\s+/g, '_')}_app`;
 
     return (
         <div className="space-y-6">
@@ -87,7 +86,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                     {hasSpec && (
                         <div className="flex gap-2">
                             <GenerateButton projectId={project.id} disabled={project.status === 'GENERATING'} />
-                            {project.status === 'READY' && <DownloadButton projectId={project.id} />}
                         </div>
                     )}
                     <div className="ml-4 pl-4 border-l">
@@ -118,8 +116,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                                                 For the most stable, feature-complete experience without container constraints, we strongly recommend deploying the generated application directly on your local machine.
                                             </p>
                                             <div className="bg-muted/50 p-4 rounded-md font-mono text-sm border space-y-2">
-                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>unzip generated-app.zip</span></div>
-                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>cd generated-app</span></div>
+                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>unzip {zipName} -d {folderName}</span></div>
+                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>cd {folderName}</span></div>
                                                 <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>npm install</span></div>
                                                 <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>npm run dev</span></div>
                                             </div>
