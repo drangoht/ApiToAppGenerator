@@ -95,7 +95,7 @@ AppForge is built to be modern, fast, and scalable. Here is a breakdown of the c
    npm run dev
    ```
 
-### Running with Docker
+### Running with Docker (Local Development)
 
 AppForge includes a production-ready `docker-compose` setup that packages the Next.js App Router and maintains persistent local volumes out of the box.
 
@@ -109,6 +109,57 @@ AppForge includes a production-ready `docker-compose` setup that packages the Ne
    ```bash
    docker-compose down
    ```
+
+### Deploying to a Remote Server (Production Docker)
+
+To deploy AppForge to a remote server without pulling the full source code, you can use the pre-built Docker image and a minimal `docker-compose.yml` file.
+
+1. **Connect to your Server** and create a deployment directory:
+   ```bash
+   mkdir -p ~/appforge/prisma
+   mkdir -p ~/appforge/projects
+   cd ~/appforge
+   ```
+
+2. **Set Ownership Permissions:**
+   The Docker container runs as a strict, non-root user (`nextjs`, UID 1001) for security. You must grant this user ownership of the mounted directories so the container can write to the database and generate projects:
+   ```bash
+   sudo chown -R 1001:1001 ~/appforge/prisma ~/appforge/projects
+   ```
+
+3. **Initialize the Database File:**
+   Docker requires the SQLite file to exist *before* mounting it, otherwise it creates a directory instead. Create an empty file, and ensure it is owned by the `nextjs` user:
+   ```bash
+   sudo -u \#1001 touch ~/appforge/prisma/dev.db
+   ```
+
+4. **Create the `docker-compose.yml` File:**
+   Create a `docker-compose.yml` inside the `appforge` directory:
+   ```yaml
+   services:
+     appforge:
+       image: drangoht/appforge:latest
+       container_name: appforge_web
+       ports:
+         - "3000:3000"
+       environment:
+         - NODE_ENV=production
+         - AUTH_TRUST_HOST=true
+         - AUTH_SECRET=your_super_secret_production_key_here
+         - DATABASE_URL=file:./dev.db
+         # - OPENAI_API_KEY=your_openai_key_here
+       volumes:
+         - ./prisma/dev.db:/app/prisma/dev.db
+         - ./projects:/app/projects
+       restart: unless-stopped
+   ```
+
+5. **Start the Application:**
+   Pull the latest image and start the container in detached mode:
+   ```bash
+   docker-compose up -d
+   ```
+   The container will automatically apply the Prisma database schema and boot up the Next.js server on port 3000.
 
 ---
 

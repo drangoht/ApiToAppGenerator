@@ -130,15 +130,17 @@ export class GeneratorService {
 
         CRITICAL Output Requirements:
         1. You MUST generate the full source code for the application. DO NOT use placeholders like "// implement here".
-        2. You MUST explicitly generate EVERY SINGLE FILE that you import. If you import '@/store/use-cat-store', you MUST provide the code for 'src/store/use-cat-store.ts'. Hallucinated imports will break the build.
-        3. You MUST provide a 'package.json' file including all third-party dependencies you used (e.g. zustand, axios, lucide-react).
-        4. DO NOT generate 'next.config.ts', as it crashes older Next.js versions. If you need a config, generate 'next.config.mjs'.
-        5. Shadcn UI REQUIRES 'src/lib/utils.ts' with the 'cn' function. You MUST generate 'src/lib/utils.ts'.
-        6. APP ROUTER STRICT RULE: ALL files inside 'src/app/' OR any file using React Hooks (useState, useEffect, useContext, useRef) MUST have the exact string literal "use client"; on the very first line of the file. DO NOT import it. It is a directive, not a function.
-        7. ENV VAR RULE: When accessing environment variables with hyphens (e.g., 'x-api-key'), you MUST use bracket notation like process.env['x-api-key']. Do not use dot notation, as process.env.x-api-key evaluates as subtraction and crashes Javascript!
-        8. IMAGE RULE: DO NOT use 'next/image' (import Image from 'next/image') for external images. Next.js crashes if external image domains are not manually whitelisted in next.config.mjs. You MUST use standard HTML <img> tags for all remote images.
-        9. NAVIGATION RULE: You MUST add a "Return to Home" link (using next/link) on ALL child pages (any page other than src/app/page.tsx) so the user can easily navigate back to the main dashboard.
-        10. Wrap each file in a special block exactly like this:
+        2. You MUST explicitly generate EVERY SINGLE FILE that you import.
+        3. You MUST provide a 'package.json' file including all third-party dependencies you used.
+        4. You MUST generate 'next.config.mjs' with 'export default { typescript: { ignoreBuildErrors: true }, eslint: { ignoreDuringBuilds: true } };'
+        5. You MUST generate 'tailwind.config.ts' and 'postcss.config.mjs' correctly exported to prevent CSS bundler crashes.
+        6. You MUST generate a valid 'tsconfig.json' with proper paths ('@/*': ['./src/*']).
+        7. You MUST generate 'src/app/layout.tsx' and 'src/app/page.tsx'. Without a root layout, the Next.js dev server will crash with ERR_INVALID_ARG_TYPE.
+        8. Shadcn UI REQUIRES 'src/lib/utils.ts' with the 'cn' function. You MUST generate 'src/lib/utils.ts'.
+        9. APP ROUTER STRICT RULE: ALL files inside 'src/app/' OR any file using React Hooks MUST have "use client"; on the very first line of the file (unless it is explicitly a server component).
+        10. ENV VAR RULE: When accessing environment variables with hyphens (e.g., 'x-api-key'), you MUST use bracket notation like process.env['x-api-key'].
+        11. IMAGE RULE: DO NOT use 'next/image' for external images. Use standard HTML <img> tags.
+        12. Wrap each file in a special block exactly like this:
         
         <<<FILE:path/to/file>>>
         [file content]
