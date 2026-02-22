@@ -1,1 +1,8 @@
-#!/bin/shset -eecho "Applying database schema..."npx prisma db push --accept-data-loss --skip-generateecho "Starting Next.js..."exec "$@"
+#!/bin/sh
+set -e
+
+echo "Applying database schema..."
+npx prisma db push --accept-data-loss --skip-generate
+
+echo "Starting Next.js..."
+exec "$@"

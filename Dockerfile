@@ -25,7 +25,7 @@ ENV NODE_ENV production
 # Disable Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl dos2unix
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
@@ -55,8 +55,12 @@ COPY --from=builder /app/prisma ./prisma
 RUN npm install prisma@5.22.0 --no-save
 
 # Copy and configure the entrypoint script
+# We run dos2unix to permanently strip any Windows \r (CRLF) characters,
+# which prevents the infamous "exec ./docker-entrypoint.sh: no such file" error.
 COPY docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh && chown nextjs:nodejs docker-entrypoint.sh
+RUN dos2unix docker-entrypoint.sh && \
+    chmod +x docker-entrypoint.sh && \
+    chown nextjs:nodejs docker-entrypoint.sh
 
 USER nextjs
 
