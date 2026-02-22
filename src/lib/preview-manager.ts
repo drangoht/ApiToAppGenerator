@@ -210,10 +210,23 @@ export default config;\n`;
             }
 
             instance.status = 'STARTING';
-            const devProcess = spawn('npm', ['run', 'dev', '--cache', '/tmp/.npm-cache', '--', '-p', instance.port!.toString(), '-H', '127.0.0.1'], { cwd, shell: true });
+
+            // We MUST explicitly clear NODE_ENV=production from the Docker container's environment
+            // when spawning the Next.js dev server, otherwise Next.js 14.2 gets deeply confused
+            // during compiler initialization and crashes with ERR_INVALID_ARG_TYPE seeking undefined paths.
+            const childEnv: NodeJS.ProcessEnv = Object.assign({}, process.env, {
+                NODE_ENV: 'development',
+                NEXT_TELEMETRY_DISABLED: '1'
+            });
+
+            const devProcess = spawn('npm', ['run', 'dev', '--cache', '/tmp/.npm-cache', '--', '-p', instance.port!.toString(), '-H', '127.0.0.1'], {
+                cwd,
+                shell: true,
+                env: childEnv
+            });
             instance.process = devProcess;
 
-            devProcess.stdout?.on('data', async (data) => {
+            devProcess.stdout?.on('data', async (data: any) => {
                 const out = data.toString();
                 await fs.appendFile(logFile, out);
                 // Next.js ready signal parsing
@@ -222,7 +235,7 @@ export default config;\n`;
                 }
             });
 
-            devProcess.stderr?.on('data', async (data) => {
+            devProcess.stderr?.on('data', async (data: any) => {
                 const out = data.toString();
                 await fs.appendFile(logFile, out);
                 console.error(`[Preview ${instance.projectId}] STDERR:`, out);
