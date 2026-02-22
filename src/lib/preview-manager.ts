@@ -134,10 +134,58 @@ export const PreviewManager = {
                 }, null, 2));
             }
 
+            // Ensure a valid tsconfig.json exists. If the LLM didn't generate one properly,
+            // Next.js dev server will crash with ERR_INVALID_ARG_TYPE in the TS compiler.
+            const defaultTsConfig = {
+                "compilerOptions": {
+                    "target": "es5",
+                    "lib": ["dom", "dom.iterable", "esnext"],
+                    "allowJs": true,
+                    "skipLibCheck": true,
+                    "strict": false,
+                    "noEmit": true,
+                    "esModuleInterop": true,
+                    "module": "esnext",
+                    "moduleResolution": "bundler",
+                    "resolveJsonModule": true,
+                    "isolatedModules": true,
+                    "jsx": "preserve",
+                    "incremental": true,
+                    "plugins": [{ "name": "next" }],
+                    "paths": { "@/*": ["./src/*"] }
+                },
+                "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+                "exclude": ["node_modules"]
+            };
+            await fs.writeFile(path.join(cwd, 'tsconfig.json'), JSON.stringify(defaultTsConfig, null, 2));
+
+            // Ensure next.config.mjs actually exports its configuration.
+            // If the LLM just wrote `const nextConfig = {}` without `export default`, 
+            // the dev server will resolve the config as undefined and crash internally.
+            const nextConfigContent = `/** @type {import('next').NextConfig} */\nconst nextConfig = { typescript: { ignoreBuildErrors: true }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;\n`;
+            await fs.writeFile(path.join(cwd, 'next.config.mjs'), nextConfigContent);
+
+            // Ensure valid postcss and tailwind configs exist to prevent CSS bundler crashes
+            const postCssContent = `export default { plugins: { tailwindcss: {}, autoprefixer: {} } };\n`;
+            await fs.writeFile(path.join(cwd, 'postcss.config.mjs'), postCssContent);
+
+            const tailwindContent = `import type { Config } from "tailwindcss";
+const config: Config = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: { extend: {} },
+  plugins: [require("tailwindcss-animate")],
+};
+export default config;\n`;
+            await fs.writeFile(path.join(cwd, 'tailwind.config.ts'), tailwindContent);
+
             if (needsInstall) {
                 instance.status = 'INSTALLING';
                 await new Promise<void>((resolve, reject) => {
-                    const install = spawn('npm', ['install', '--no-fund', '--no-audit'], { cwd, shell: true });
+                    const install = spawn('npm', ['install', '--no-fund', '--no-audit', '--cache', '/tmp/.npm-cache'], { cwd, shell: true });
                     install.stdout.on('data', async d => await fs.appendFile(logFile, d.toString()));
                     install.stderr.on('data', async d => await fs.appendFile(logFile, d.toString()));
                     install.on('close', (code) => {
@@ -154,9 +202,8 @@ export const PreviewManager = {
                 // Ignore missing directory
             }
 
-            // Start dev server (forcing IPv4 binding)
             instance.status = 'STARTING';
-            const devProcess = spawn('npm', ['run', 'dev', '--', '-p', instance.port!.toString(), '-H', '127.0.0.1'], { cwd, shell: true });
+            const devProcess = spawn('npm', ['run', 'dev', '--cache', '/tmp/.npm-cache', '--', '-p', instance.port!.toString(), '-H', '127.0.0.1'], { cwd, shell: true });
             instance.process = devProcess;
 
             devProcess.stdout?.on('data', async (data) => {

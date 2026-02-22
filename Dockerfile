@@ -51,6 +51,13 @@ RUN chown -R nextjs:nodejs prisma projects
 # Copy prisma schema so we can run migrations/push on startup if needed
 COPY --from=builder /app/prisma ./prisma
 
+# Install prisma CLI so the entrypoint can run schema migrations
+RUN npm install prisma@5.22.0 --no-save
+
+# Copy and configure the entrypoint script
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh && chown nextjs:nodejs docker-entrypoint.sh
+
 USER nextjs
 
 EXPOSE 3000
@@ -61,4 +68,5 @@ ENV HOSTNAME "0.0.0.0"
 
 # Note: server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]
