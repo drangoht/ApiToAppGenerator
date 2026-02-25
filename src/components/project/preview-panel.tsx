@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Play, Square, Loader2, RefreshCw } from 'lucide-react'
+import { Play, Square, Loader2, RefreshCw, Link as LinkIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function PreviewPanel({ projectId }: { projectId: string }) {
@@ -81,6 +81,15 @@ export function PreviewPanel({ projectId }: { projectId: string }) {
                     <Button variant="outline" size="sm" onClick={fetchStatus} disabled={isLoading}>
                         <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
+                    {status === 'READY' && port && (
+                        <Button variant="outline" size="sm" onClick={() => {
+                            const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/preview/${port}/${projectId}`;
+                            navigator.clipboard.writeText(url);
+                            toast.success("Public link copied to clipboard!");
+                        }}>
+                            <LinkIcon className="h-4 w-4 mr-2" /> Share Link
+                        </Button>
+                    )}
                     {(status === 'IDLE' || status === 'ERROR') ? (
                         <Button size="sm" onClick={handleStartPreview} disabled={isLoading}>
                             <Play className="h-4 w-4 mr-2" /> Start App
