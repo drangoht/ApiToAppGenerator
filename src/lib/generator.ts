@@ -325,8 +325,9 @@ export class GeneratorService {
                 "@types/node": "^20.0.0",
                 "@types/react": "^18.2.0",
                 "@types/react-dom": "^18.2.0",
-                "postcss": "^8.4.0",
-                "tailwindcss": "^3.4.0"
+                "postcss": "^8.4.31",
+                "tailwindcss": "^3.4.0",
+                "autoprefixer": "^10.4.19"
             };
 
             for (const [dep, version] of Object.entries(forceDeps)) {
