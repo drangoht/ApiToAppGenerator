@@ -116,7 +116,7 @@ export function PreviewPanel({ projectId }: { projectId: string }) {
 
                 {status === 'READY' && port && (
                     <iframe
-                        src={`http://localhost:${port}?_rnd=${Date.now()}`}
+                        src={`${typeof window !== 'undefined' ? window.location.protocol : 'http:'}//${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:${port}?_rnd=${Date.now()}`}
                         className="w-full h-full border-0 bg-white"
                         title="App Preview"
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
