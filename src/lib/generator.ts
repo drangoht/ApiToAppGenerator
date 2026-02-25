@@ -296,6 +296,7 @@ export class GeneratorService {
 
             if (!pkg.dependencies) pkg.dependencies = {};
             if (!pkg.devDependencies) pkg.devDependencies = {};
+            if (!pkg.scripts) pkg.scripts = {};
 
             // Remove hallucinatory invalid packages that break npm install
             const invalidPackages = ["shadcn/ui", "shadcn", "@shadcn/ui"];
@@ -303,6 +304,11 @@ export class GeneratorService {
                 delete pkg.dependencies[invalidPkg];
                 delete pkg.devDependencies[invalidPkg];
             }
+
+            // Explicitly force Webpack (disable Turbopack) because Turbopack's Rust IPC crashes in our Docker sandbox mapping
+            pkg.scripts.dev = "next dev";
+            pkg.scripts.build = "next build";
+            pkg.scripts.start = "next start";
 
             // Force override core Next.js 14 / React 18 dependencies.
             // If the LLM generates Next.js 12 (pre-App Router), the preview will completely crash.
