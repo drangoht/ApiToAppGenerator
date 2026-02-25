@@ -252,7 +252,8 @@ export default config;\n`;
 
             instance.status = 'STARTING';
 
-            const devProcess = spawn('npm', ['run', 'dev', '--cache', '/tmp/.npm-cache', '--', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
+            // Directly invoke npx next dev to explicitly bypass any hallucinatory --turbo flags generated in legacy package.json files!
+            const devProcess = spawn('npx', ['next', 'dev', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
                 cwd,
                 shell: true,
                 env: childEnv
