@@ -138,9 +138,10 @@ export class GeneratorService {
         7. You MUST generate 'src/app/layout.tsx' and 'src/app/page.tsx'. Without a root layout, the Next.js dev server will crash with ERR_INVALID_ARG_TYPE.
         8. Shadcn UI REQUIRES 'src/lib/utils.ts' with the 'cn' function. You MUST generate 'src/lib/utils.ts'.
         9. APP ROUTER STRICT RULE: ALL files inside 'src/app/' OR any file using React Hooks MUST have "use client"; on the very first line of the file (unless it is explicitly a server component).
-        10. ENV VAR RULE: When accessing environment variables with hyphens (e.g., 'x-api-key'), you MUST use bracket notation like process.env['x-api-key'].
+        10. ENV VAR RULE: You MUST strictly use bracket notation for environment variables with hyphens like process.env['x-api-key']. Using dot notation (process.env.x-api-key) will cause a JavaScript math subtraction crash!
         11. IMAGE RULE: DO NOT use 'next/image' for external images. Use standard HTML <img> tags.
-        12. Wrap each file in a special block exactly like this:
+        12. PROTOCOL RULE: NEVER use 'http://' for external API base URLs. You MUST ALWAYS use 'https://' to prevent CORS and mixed-content blocking errors in the deployed application.
+        13. Wrap each file in a special block exactly like this:
         
         <<<FILE:path/to/file>>>
         [file content]

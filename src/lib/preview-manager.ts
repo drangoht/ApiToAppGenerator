@@ -101,38 +101,50 @@ export const PreviewManager = {
             const logFile = path.join(cwd, 'preview.log');
             await fs.writeFile(logFile, `--- Preview Start ---\n`);
 
-            // Ensure a package.json exists to prevent npm commands from traversing UP the directory tree
-            // and accidentally double-starting the outer ApiToAppGenerator Next.js app.
+            // Ensure a package.json exists and ALWAYS forcefully inject the required Next.js dev scripts
+            // otherwise the LLM-generated package.json might just say "next dev" which binds to 127.0.0.1 and breaks Docker.
+            const pkgPath = path.join(cwd, 'package.json');
+            let pkgData: any = {};
             try {
-                await fs.access(path.join(cwd, 'package.json'));
+                const existing = await fs.readFile(pkgPath, 'utf-8');
+                pkgData = JSON.parse(existing);
             } catch {
-                await fs.writeFile(path.join(cwd, 'package.json'), JSON.stringify({
-                    "name": "generated-app",
-                    "version": "0.1.0",
-                    "private": true,
-                    "scripts": {
-                        "dev": "next dev",
-                        "build": "next build",
-                        "start": "next start"
-                    },
-                    "dependencies": {
-                        "next": "^14.0.0",
-                        "react": "^18.2.0",
-                        "react-dom": "^18.2.0",
-                        "lucide-react": "latest",
-                        "tailwind-merge": "latest",
-                        "clsx": "latest"
-                    },
-                    "devDependencies": {
-                        "@types/node": "latest",
-                        "@types/react": "latest",
-                        "@types/react-dom": "latest",
-                        "postcss": "latest",
-                        "tailwindcss": "latest",
-                        "typescript": "latest"
-                    }
-                }, null, 2));
+                pkgData = {
+                    name: "generated-app",
+                    version: "0.1.0",
+                    private: true,
+                    dependencies: {}
+                };
             }
+
+            // Forcefully apply scripts and critical dependencies regardless of what the LLM generated
+            // We pin Next.js to 14.2.35 and React to 18.2.0 to prevent Next 15 / React 19 breaking changes.
+            pkgData.scripts = {
+                ...pkgData.scripts,
+                "dev": "next dev . -H 0.0.0.0",
+                "build": "next build .",
+                "start": "next start . -H 0.0.0.0"
+            };
+            pkgData.dependencies = {
+                ...pkgData.dependencies,
+                "next": "14.2.35",
+                "react": "18.2.0",
+                "react-dom": "18.2.0",
+                "lucide-react": "latest",
+                "tailwind-merge": "latest",
+                "clsx": "latest"
+            };
+            pkgData.devDependencies = {
+                ...pkgData.devDependencies,
+                "@types/node": "latest",
+                "@types/react": "latest",
+                "@types/react-dom": "latest",
+                "postcss": "latest",
+                "tailwindcss": "latest",
+                "typescript": "latest"
+            };
+
+            await fs.writeFile(pkgPath, JSON.stringify(pkgData, null, 2));
 
             // Ensure a valid tsconfig.json exists. If the LLM didn't generate one properly,
             // Next.js dev server will crash with ERR_INVALID_ARG_TYPE in the TS compiler.
@@ -214,12 +226,23 @@ export default config;\n`;
             // We MUST explicitly clear NODE_ENV=production from the Docker container's environment
             // when spawning the Next.js dev server, otherwise Next.js 14.2 gets deeply confused
             // during compiler initialization and crashes with ERR_INVALID_ARG_TYPE seeking undefined paths.
-            const childEnv: NodeJS.ProcessEnv = Object.assign({}, process.env, {
+            // CRITICAL: We also MUST strip all internal NEXT_ and __NEXT_ variables inherited from the AppForge Next.js 
+            // parent process, otherwise the child Next.js process skips loading next.config.mjs because it thinks it is
+            // inside a different build phase!
+            const childEnv: NodeJS.ProcessEnv = {
                 NODE_ENV: 'development',
                 NEXT_TELEMETRY_DISABLED: '1'
-            });
+            };
+            for (const key in process.env) {
+                if (key.startsWith('__NEXT') || (key.startsWith('NEXT_') && key !== 'NEXT_TELEMETRY_DISABLED')) {
+                    continue;
+                }
+                if (process.env[key] !== undefined) {
+                    childEnv[key] = process.env[key];
+                }
+            }
 
-            const devProcess = spawn('npm', ['run', 'dev', '--cache', '/tmp/.npm-cache', '--', '-p', instance.port!.toString(), '-H', '127.0.0.1'], {
+            const devProcess = spawn('npm', ['run', 'dev', '--cache', '/tmp/.npm-cache', '--', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
                 cwd,
                 shell: true,
                 env: childEnv
