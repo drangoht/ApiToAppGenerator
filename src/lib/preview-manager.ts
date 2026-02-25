@@ -212,7 +212,8 @@ export default config;\n`;
             // inside a different build phase!
             const childEnv: NodeJS.ProcessEnv = {
                 NODE_ENV: 'development',
-                NEXT_TELEMETRY_DISABLED: '1'
+                NEXT_TELEMETRY_DISABLED: '1',
+                npm_config_cache: '/tmp/.npm-cache'
             };
             for (const key in process.env) {
                 if (key.startsWith('__NEXT') || (key.startsWith('NEXT_') && key !== 'NEXT_TELEMETRY_DISABLED')) {
