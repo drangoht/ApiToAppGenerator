@@ -201,10 +201,36 @@ const config: Config = {
 export default config;\n`;
             await fs.writeFile(path.join(cwd, 'tailwind.config.ts'), tailwindContent);
 
+            // We MUST explicitly clear NODE_ENV=production from the Docker container's environment
+            // when spawning the Next.js tools, otherwise Next.js 14.2 gets deeply confused
+            // during compiler initialization and crashes with ERR_INVALID_ARG_TYPE seeking undefined paths.
+            // CRITICAL: We also MUST strip all internal NEXT_ and __NEXT_ variables inherited from the AppForge Next.js 
+            // parent process, otherwise the child Next.js process skips loading next.config.mjs because it thinks it is
+            // inside a different build phase!
+            const childEnv: NodeJS.ProcessEnv = {
+                NODE_ENV: 'development',
+                NEXT_TELEMETRY_DISABLED: '1'
+            };
+            for (const key in process.env) {
+                if (key.startsWith('__NEXT') || (key.startsWith('NEXT_') && key !== 'NEXT_TELEMETRY_DISABLED')) {
+                    continue;
+                }
+                if (process.env[key] !== undefined) {
+                    childEnv[key] = process.env[key];
+                }
+            }
+
             if (needsInstall) {
                 instance.status = 'INSTALLING';
+
+                // Forcefully clear old modules to prevent tar ENOENT and ENOTEMPTY cache corruptions on Docker mapping
+                try {
+                    await fs.rm(path.join(cwd, 'node_modules'), { recursive: true, force: true });
+                    await fs.rm(path.join(cwd, 'package-lock.json'), { force: true });
+                } catch (e) { }
+
                 await new Promise<void>((resolve, reject) => {
-                    const install = spawn('npm', ['install', '--no-fund', '--no-audit', '--cache', '/tmp/.npm-cache'], { cwd, shell: true });
+                    const install = spawn('npm', ['install', '--no-fund', '--no-audit', '--cache', '/tmp/.npm-cache'], { cwd, shell: true, env: childEnv });
                     install.stdout.on('data', async d => await fs.appendFile(logFile, d.toString()));
                     install.stderr.on('data', async d => await fs.appendFile(logFile, d.toString()));
                     install.on('close', (code) => {
@@ -222,25 +248,6 @@ export default config;\n`;
             }
 
             instance.status = 'STARTING';
-
-            // We MUST explicitly clear NODE_ENV=production from the Docker container's environment
-            // when spawning the Next.js dev server, otherwise Next.js 14.2 gets deeply confused
-            // during compiler initialization and crashes with ERR_INVALID_ARG_TYPE seeking undefined paths.
-            // CRITICAL: We also MUST strip all internal NEXT_ and __NEXT_ variables inherited from the AppForge Next.js 
-            // parent process, otherwise the child Next.js process skips loading next.config.mjs because it thinks it is
-            // inside a different build phase!
-            const childEnv: NodeJS.ProcessEnv = {
-                NODE_ENV: 'development',
-                NEXT_TELEMETRY_DISABLED: '1'
-            };
-            for (const key in process.env) {
-                if (key.startsWith('__NEXT') || (key.startsWith('NEXT_') && key !== 'NEXT_TELEMETRY_DISABLED')) {
-                    continue;
-                }
-                if (process.env[key] !== undefined) {
-                    childEnv[key] = process.env[key];
-                }
-            }
 
             const devProcess = spawn('npm', ['run', 'dev', '--cache', '/tmp/.npm-cache', '--', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
                 cwd,
