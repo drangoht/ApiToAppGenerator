@@ -234,6 +234,15 @@ export class GeneratorService {
         const projectDir = path.join(process.cwd(), 'projects', this.projectId, 'generated');
         await fs.mkdir(projectDir, { recursive: true });
 
+        try {
+            // Aggressively clear out old source code to prevent ghost files from previous generations
+            await fs.rm(path.join(projectDir, 'src'), { recursive: true, force: true });
+            await fs.rm(path.join(projectDir, 'components'), { recursive: true, force: true });
+            await fs.rm(path.join(projectDir, 'app'), { recursive: true, force: true });
+        } catch (e) {
+            // Missing directories are fine
+        }
+
         const fileRegex = /<<<FILE:(.*?)>>>([\s\S]*?)<<<END>>>/g;
         // Save raw LLM output for debugging
         await fs.writeFile(path.join(projectDir, 'llm-output.txt'), text);
