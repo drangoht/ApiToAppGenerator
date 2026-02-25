@@ -178,6 +178,7 @@ To deploy AppForge to a remote server without pulling the full source code, you 
        container_name: appforge_web
        ports:
          - "3000:3000"
+         - "3100-3110:3100-3110"
        environment:
          - NODE_ENV=production
          - AUTH_TRUST_HOST=true
