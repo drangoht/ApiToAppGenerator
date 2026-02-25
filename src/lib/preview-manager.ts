@@ -181,7 +181,10 @@ export const PreviewManager = {
             await fs.rm(path.join(cwd, 'next.config.js'), { force: true });
             await fs.rm(path.join(cwd, 'next.config.ts'), { force: true });
             await fs.rm(path.join(cwd, 'next.config.cjs'), { force: true });
-            const nextConfigContent = `/** @type {import('next').NextConfig} */\nconst nextConfig = { typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;\n`;
+
+            // Dynamic basePath for remote Reverse Proxy tunneling
+            const basePath = `/preview/${instance.port}/${instance.projectId}`;
+            const nextConfigContent = `/** @type {import('next').NextConfig} */\nconst nextConfig = { basePath: "${basePath}", typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;\n`;
             await fs.writeFile(path.join(cwd, 'next.config.mjs'), nextConfigContent);
 
             // Ensure valid postcss and tailwind configs exist to prevent CSS bundler crashes
