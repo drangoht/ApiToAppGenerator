@@ -117,8 +117,23 @@ export const PreviewManager = {
                 };
             }
 
-            // ALWAYS rewrite package.json with pinned dependencies to prevent Next.js 15 from being installed
-            // by old LLM-generated projects which causes Turbopack to be activated by default.
+            // Check the installed Next.js version BEFORE rewriting package.json
+            // so we can detect version mismatch and force reinstall.
+            try {
+                const installedPkgPath = path.join(cwd, 'node_modules', 'next', 'package.json');
+                const installedNext = JSON.parse(await fs.readFile(installedPkgPath, 'utf-8'));
+                if (installedNext.version !== '14.2.35') {
+                    // Wrong version (e.g. Next.js 15/16 which defaults to Turbopack). Force reinstall.
+                    console.log(`[Preview ${instance.projectId}] Found Next.js ${installedNext.version}, downgrading to 14.2.35`);
+                    needsInstall = true;
+                }
+            } catch {
+                // node_modules doesn't exist or is corrupt, force reinstall
+                needsInstall = true;
+            }
+
+            // ALWAYS rewrite package.json with pinned dependencies to prevent Next.js 15+ from being installed.
+            // This also strips any LLM-generated --turbo flags from dev scripts.
             pkgData.scripts = {
                 ...pkgData.scripts,
                 "dev": "next dev",
@@ -136,29 +151,23 @@ export const PreviewManager = {
             };
             pkgData.devDependencies = {
                 ...pkgData.devDependencies,
-                "@types/node": "latest",
-                "@types/react": "latest",
-                "@types/react-dom": "latest",
-                "postcss": "latest",
-                "tailwindcss": "latest",
-                "autoprefixer": "latest",
-                "typescript": "latest"
+                // Pin @types to React 18 - using 'latest' installs React 19 types which break Next.js 14.2.35
+                "@types/node": "^20",
+                "@types/react": "^18",
+                "@types/react-dom": "^18",
+                "postcss": "^8",
+                "tailwindcss": "^3",
+                "autoprefixer": "^10",
+                "typescript": "^5"
             };
+            // Remove any LLM-hallucinated invalid packages
+            for (const invalid of ['shadcn/ui', 'shadcn', '@shadcn/ui']) {
+                delete pkgData.dependencies[invalid];
+                delete pkgData.devDependencies?.[invalid];
+            }
 
             await fs.writeFile(pkgPath, JSON.stringify(pkgData, null, 2));
 
-            // ALWAYS force a reinstall when package.json changes.
-            // We detect if the installed Next.js version matches the pinned version.
-            // If not (e.g., old project had Next.js 15 installed which uses Turbopack by default), we must reinstall.
-            needsInstall = true; // Unconditionally reinstall to guarantee correct versions
-            try {
-                const installedPkgPath = path.join(cwd, 'node_modules', 'next', 'package.json');
-                const installedNext = JSON.parse(await fs.readFile(installedPkgPath, 'utf-8'));
-                if (installedNext.version === '14.2.35') {
-                    // Correct version already installed, skip reinstall
-                    needsInstall = false;
-                }
-            } catch { }
 
 
             // Ensure a valid tsconfig.json exists. If the LLM didn't generate one properly,
@@ -266,7 +275,7 @@ export default config;\n`;
                 } catch (e) { }
 
                 await new Promise<void>((resolve, reject) => {
-                    const install = spawn('npm', ['install', '--no-fund', '--no-audit', '--cache', '/tmp/.npm-cache'], { cwd, shell: true, env: childEnv });
+                    const install = spawn('npm', ['install', '--no-fund', '--no-audit', '--legacy-peer-deps', '--cache', '/tmp/.npm-cache'], { cwd, shell: true, env: childEnv });
                     install.stdout.on('data', async d => await fs.appendFile(logFile, d.toString()));
                     install.stderr.on('data', async d => await fs.appendFile(logFile, d.toString()));
                     install.on('close', (code) => {
