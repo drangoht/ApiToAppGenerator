@@ -4,23 +4,28 @@ import { Button } from '@/components/ui/button'
 import { Play, Loader2 } from 'lucide-react'
 import { generateAppAction } from '@/app/actions/generate'
 import { useState } from 'react'
-import { toast } from 'sonner' // Assuming sonner is installed, shadcn usually adds it
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export function GenerateButton({ projectId, disabled }: { projectId: string; disabled?: boolean }) {
     const [isLoading, setIsLoading] = useState(false)
+    const router = useRouter()
 
     async function handleGenerate() {
         setIsLoading(true);
-        // We could use toast here
         try {
             const result = await generateAppAction(projectId);
             if (result.success) {
                 toast.success(result.message);
+                // Refresh the page's server components so Preview & Download panels appear
+                // without requiring the user to navigate away and back.
+                router.refresh();
             } else {
                 toast.error(result.message);
             }
         } catch (e) {
             console.error(e);
+            toast.error('An unexpected error occurred during generation.');
         } finally {
             setIsLoading(false);
         }
