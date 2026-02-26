@@ -134,9 +134,18 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                     </TabsList>
 
                     {/* ── Preview Tab ── */}
-                    <TabsContent value="preview" className="mt-4">
+                    <TabsContent value="preview" className="mt-4 space-y-3">
                         {isReady ? (
-                            <PreviewPanel projectId={project.id} />
+                            <>
+                                <div className="flex items-start gap-3 px-1 py-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-200">
+                                    <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                    <p>
+                                        The sandbox preview may exhibit routing or compiler issues that do <b>not</b> exist when running locally.
+                                        For the best experience, use the <b>Download</b> tab and run the app with <code>npm run dev</code>.
+                                    </p>
+                                </div>
+                                <PreviewPanel projectId={project.id} />
+                            </>
                         ) : (
                             <div className="flex flex-col items-center gap-4 py-20 text-muted-foreground">
                                 <Cpu className="h-12 w-12 opacity-40" />
@@ -175,13 +184,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                                             <div className="flex items-center gap-2 text-muted-foreground"><span className="select-none">$</span><span>npm install</span></div>
                                             <div className="flex items-center gap-2 text-muted-foreground"><span className="select-none">$</span><span>npm run dev</span></div>
                                         </div>
-                                        <div className="flex items-start gap-3 p-3 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-200">
-                                            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                                            <p>
-                                                The built-in sandbox preview may exhibit routing or compiler issues that do <b>not</b> exist when running locally.
-                                                Local development is the recommended way to use the generated app.
-                                            </p>
-                                        </div>
+
                                         <DownloadButton projectId={project.id} className="w-full" />
                                     </CardContent>
                                 </Card>
