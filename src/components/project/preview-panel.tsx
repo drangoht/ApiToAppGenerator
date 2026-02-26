@@ -82,12 +82,11 @@ export function PreviewPanel({ projectId }: { projectId: string }) {
                         <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => {
-                        // Use the active port if preview is running, otherwise use the last known port
-                        // The shareable URL always routes through the AppForge proxy
-                        const sharePort = port ?? 3100; // fallback to default port range start
-                        const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/preview/${sharePort}/${projectId}`;
+                        // /share/[projectId] is a public page that shows the preview if running
+                        // or a friendly "not started" message if offline — no raw proxy errors
+                        const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${projectId}`;
                         navigator.clipboard.writeText(url);
-                        toast.success("Public link copied to clipboard!");
+                        toast.success("Public share link copied to clipboard!");
                     }}>
                         <LinkIcon className="h-4 w-4 mr-2" /> Share Link
                     </Button>
