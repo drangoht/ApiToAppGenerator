@@ -184,7 +184,10 @@ export const PreviewManager = {
 
             // Dynamic basePath for remote Reverse Proxy tunneling
             const basePath = `/preview/${instance.port}/${instance.projectId}`;
-            const nextConfigContent = `/** @type {import('next').NextConfig} */\nconst nextConfig = { basePath: "${basePath}", typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;\n`;
+            // CRITICAL: allowedDevOrigins ensures Next.js dev server does not reject cross-origin /_next/* requests
+            // from the reverse proxy parent appforge domain. Without this, Next.js 15+ throws cross-origin warnings
+            // that block hot-reload and asset loading for the sandboxed preview app.
+            const nextConfigContent = `/** @type {import('next').NextConfig} */\nconst nextConfig = { basePath: "${basePath}", allowedDevOrigins: ['*'], typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;\n`;
             await fs.writeFile(path.join(cwd, 'next.config.mjs'), nextConfigContent);
 
             // Ensure valid postcss and tailwind configs exist to prevent CSS bundler crashes
@@ -253,8 +256,11 @@ export default config;\n`;
 
             instance.status = 'STARTING';
 
-            // Directly invoke npx next dev to explicitly bypass any hallucinatory --turbo flags generated in legacy package.json files!
-            const devProcess = spawn('npx', ['next', 'dev', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
+            // CRITICAL: --no-turbopack forces the stable Webpack compiler regardless of:
+            // - LLM-generated package.json "dev": "next dev --turbo" scripts
+            // - Next.js 15+ defaulting to Turbopack in dev mode
+            // Turbopack's Rust IPC crashes with 'Connection reset by peer (os error 104)' inside Docker volume-mapped containers
+            const devProcess = spawn('npx', ['next', 'dev', '--no-turbopack', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
                 cwd,
                 shell: true,
                 env: childEnv
