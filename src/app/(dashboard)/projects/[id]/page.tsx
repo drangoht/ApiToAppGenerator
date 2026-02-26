@@ -4,19 +4,18 @@ import { redirect } from "next/navigation"
 import { UploadSpecForm } from "@/components/project/upload-spec-form"
 import { EndpointList } from "@/components/project/endpoint-list"
 import { LlmConfigForm } from "@/components/project/llm-config-form"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Play } from "lucide-react"
 import { GenerateButton } from "@/components/project/generate-button"
 import { DownloadButton } from "@/components/project/download-button"
 import { PreviewPanel } from "@/components/project/preview-panel"
 import { TargetApiConfigForm } from "@/components/project/target-api-config-form"
 import { DeleteProjectButton } from "@/components/project/delete-project-button"
+import { EditProjectDescription } from "@/components/project/edit-project-description"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Terminal, Eye, Settings, BookOpen, Cpu, Download, AlertTriangle } from "lucide-react"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-
-import { EditProjectDescription } from "@/components/project/edit-project-description"
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth()
@@ -26,23 +25,21 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
     const project = await prisma.project.findUnique({
         where: { id },
-        include: {
-            enrichments: true
-        }
+        include: { enrichments: true }
     })
 
     if (!project) return <div>Project not found</div>
 
     const hasSpec = !!project.openApiSpec
-    let endpoints: any[] = [];
-    let llmConfig = {};
-    let specInfo: { title?: string, description?: string, version?: string } | null = null;
+    let endpoints: any[] = []
+    let llmConfig: any = {}
+    let specInfo: { title?: string; description?: string; version?: string } | null = null
 
     if (hasSpec) {
         try {
-            const spec = JSON.parse(project.openApiSpec!);
-            specInfo = spec.info || null;
-            const paths = spec.paths || {};
+            const spec = JSON.parse(project.openApiSpec!)
+            specInfo = spec.info || null
+            const paths = spec.paths || {}
             for (const [path, methods] of Object.entries(paths)) {
                 for (const [method, details] of Object.entries(methods as any)) {
                     if (['get', 'post', 'put', 'delete', 'patch', 'options', 'head'].includes(method)) {
@@ -51,147 +48,274 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                             path,
                             summary: (details as any).summary || "No summary",
                             description: (details as any).description || ""
-                        });
+                        })
                     }
                 }
             }
-        } catch (e) {
-            console.error("Failed to parse stored spec", e);
-        }
+        } catch { }
     }
 
     if (project.llmConfig) {
-        try {
-            llmConfig = JSON.parse(project.llmConfig);
-        } catch (e) { }
+        try { llmConfig = JSON.parse(project.llmConfig) } catch { }
     }
 
-    const targetApiConfig = project.targetApiConfig ? JSON.parse(project.targetApiConfig) : {};
+    const targetApiConfig = project.targetApiConfig ? JSON.parse(project.targetApiConfig) : {}
+    const zipName = `${project.name.replace(/\s+/g, '_')}_generated.zip`
+    const folderName = `${project.name.replace(/\s+/g, '_')}_app`
+    const isReady = project.status === 'READY'
+    const isGenerating = project.status === 'GENERATING'
 
-    // The exact zip filename spawned by the /download API route
-    const zipName = `${project.name.replace(/\s+/g, '_')}_generated.zip`;
-    const folderName = `${project.name.replace(/\s+/g, '_')}_app`;
+    const statusColors: Record<string, string> = {
+        DRAFT: 'bg-zinc-500',
+        GENERATING: 'bg-yellow-500 animate-pulse',
+        READY: 'bg-green-500',
+        ERROR: 'bg-red-500'
+    }
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
+            {/* ── Header ── */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                        <h1 className="text-2xl font-bold tracking-tight truncate">{project.name}</h1>
+                        <span className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${statusColors[project.status] ?? 'bg-zinc-500'}`} />
+                        <Badge variant="outline" className="text-xs flex-shrink-0">{project.status}</Badge>
+                    </div>
                     <EditProjectDescription projectId={project.id} initialDescription={project.description || ""} />
                 </div>
-                <div className="flex items-center gap-2">
-                    <Badge variant={project.status === 'DRAFT' ? 'secondary' : 'default'}>
-                        {project.status}
-                    </Badge>
+                <div className="flex items-center gap-2 flex-shrink-0">
                     {hasSpec && (
-                        <div className="flex gap-2">
-                            <GenerateButton projectId={project.id} disabled={project.status === 'GENERATING'} />
-                        </div>
+                        <GenerateButton projectId={project.id} disabled={isGenerating} />
                     )}
-                    <div className="ml-4 pl-4 border-l">
+                    {isReady && (
+                        <DownloadButton projectId={project.id} />
+                    )}
+                    <div className="pl-2 border-l">
                         <DeleteProjectButton projectId={project.id} />
                     </div>
                 </div>
             </div>
 
+            {/* ── No spec yet ── */}
             {!hasSpec ? (
-                <div className="flex justify-center py-12">
+                <div className="flex flex-col items-center gap-6 py-16">
+                    <div className="rounded-full bg-muted p-6">
+                        <BookOpen className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <div className="text-center">
+                        <h2 className="text-xl font-semibold mb-2">Upload your OpenAPI Specification</h2>
+                        <p className="text-muted-foreground text-sm mb-6 max-w-md">
+                            Upload a JSON or YAML OpenAPI specification to get started. AppForge will analyze it and generate a full Next.js frontend application.
+                        </p>
+                    </div>
                     <UploadSpecForm projectId={project.id} />
                 </div>
             ) : (
-                <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-                    <div className="lg:col-span-2 space-y-6">
-                        {project.status === 'READY' && (
-                            <>
-                                <Card className="border-green-200 dark:border-green-900 shadow-sm">
-                                    <CardHeader className="bg-green-50/50 dark:bg-green-900/10 pb-4">
-                                        <CardTitle className="text-xl flex items-center gap-2 text-green-800 dark:text-green-300">
-                                            <span>💻 Run Locally (Recommended)</span>
-                                            <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 border-none ml-auto">Best Experience</Badge>
+                /* ── Tabbed layout ── */
+                <Tabs defaultValue={isReady ? "preview" : "api"} className="space-y-4">
+                    <TabsList className="grid w-full grid-cols-4 h-auto">
+                        <TabsTrigger value="preview" className="flex items-center gap-2 py-2.5">
+                            <Eye className="h-4 w-4" />
+                            <span className="hidden sm:inline">Preview</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="download" className="flex items-center gap-2 py-2.5">
+                            <Download className="h-4 w-4" />
+                            <span className="hidden sm:inline">Download</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="api" className="flex items-center gap-2 py-2.5">
+                            <BookOpen className="h-4 w-4" />
+                            <span className="hidden sm:inline">API Spec</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="settings" className="flex items-center gap-2 py-2.5">
+                            <Settings className="h-4 w-4" />
+                            <span className="hidden sm:inline">Settings</span>
+                        </TabsTrigger>
+                    </TabsList>
+
+                    {/* ── Preview Tab ── */}
+                    <TabsContent value="preview" className="mt-4">
+                        {isReady ? (
+                            <PreviewPanel projectId={project.id} />
+                        ) : (
+                            <div className="flex flex-col items-center gap-4 py-20 text-muted-foreground">
+                                <Cpu className="h-12 w-12 opacity-40" />
+                                <div className="text-center">
+                                    <p className="font-medium text-foreground mb-1">
+                                        {isGenerating ? 'Generating your app...' : 'No app generated yet'}
+                                    </p>
+                                    <p className="text-sm">
+                                        {isGenerating
+                                            ? 'This may take a minute. The page will refresh when done.'
+                                            : 'Click "Generate App" in the header to build your application.'
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    {/* ── Download Tab ── */}
+                    <TabsContent value="download" className="mt-4">
+                        {isReady ? (
+                            <div className="grid gap-4 max-w-2xl mx-auto">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Download className="h-5 w-5" /> Download & Run Locally
                                         </CardTitle>
+                                        <CardDescription>
+                                            Get the full generated source code as a ZIP archive for local development or deployment.
+                                        </CardDescription>
                                     </CardHeader>
-                                    <CardContent className="pt-6 space-y-4">
-                                        <div className="text-sm text-muted-foreground space-y-3">
+                                    <CardContent className="space-y-6">
+                                        <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm border space-y-2">
+                                            <div className="flex items-center gap-2 text-muted-foreground"><span className="select-none">$</span><span>unzip {zipName} -d {folderName}</span></div>
+                                            <div className="flex items-center gap-2 text-muted-foreground"><span className="select-none">$</span><span>cd {folderName}</span></div>
+                                            <div className="flex items-center gap-2 text-muted-foreground"><span className="select-none">$</span><span>npm install</span></div>
+                                            <div className="flex items-center gap-2 text-muted-foreground"><span className="select-none">$</span><span>npm run dev</span></div>
+                                        </div>
+                                        <div className="flex items-start gap-3 p-3 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-200">
+                                            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                                             <p>
-                                                For the most stable, feature-complete experience without container constraints, we strongly recommend deploying the generated application directly on your local machine.
-                                            </p>
-                                            <div className="bg-muted/50 p-4 rounded-md font-mono text-sm border space-y-2">
-                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>unzip {zipName} -d {folderName}</span></div>
-                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>cd {folderName}</span></div>
-                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>npm install</span></div>
-                                                <div className="flex items-center gap-2"><span className="select-none text-muted-foreground">$</span> <span>npm run dev</span></div>
-                                            </div>
-                                            <p className="text-xs">
-                                                <b className="text-foreground">Note on Preview:</b> The built-in sandbox preview below operates in an isolated Docker sub-environment. Next.js App Router applications are exceedingly complex to sandbox dynamically, and the live preview may occasionally exhibit routing bugs, hot-reloading failures, or compiler crashes that do <b>not</b> exist in the actual downloaded code.
+                                                The built-in sandbox preview may exhibit routing or compiler issues that do <b>not</b> exist when running locally.
+                                                Local development is the recommended way to use the generated app.
                                             </p>
                                         </div>
-                                        <div className="pt-2">
-                                            <DownloadButton projectId={project.id} className="w-full sm:w-auto font-medium" />
-                                        </div>
+                                        <DownloadButton projectId={project.id} className="w-full" />
                                     </CardContent>
                                 </Card>
-
-                                <PreviewPanel projectId={project.id} />
-                            </>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center gap-4 py-20 text-muted-foreground">
+                                <Download className="h-12 w-12 opacity-40" />
+                                <div className="text-center">
+                                    <p className="font-medium text-foreground mb-1">Nothing to download yet</p>
+                                    <p className="text-sm">Generate your app first using the button in the header.</p>
+                                </div>
+                            </div>
                         )}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>API Specification</CardTitle>
-                                {specInfo && (
-                                    <div className="mt-4 text-sm text-muted-foreground border-b pb-4">
-                                        {specInfo.title && <p className="text-lg font-semibold text-foreground mb-2">{specInfo.title} {specInfo.version ? `(v${specInfo.version})` : ''}</p>}
+                    </TabsContent>
+
+                    {/* ── API Spec Tab ── */}
+                    <TabsContent value="api" className="mt-4">
+                        <div className="space-y-4">
+                            {specInfo && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>
+                                            {specInfo.title || 'API Specification'}
+                                            {specInfo.version && (
+                                                <Badge variant="outline" className="ml-2 font-mono text-xs">v{specInfo.version}</Badge>
+                                            )}
+                                        </CardTitle>
                                         {specInfo.description && (
-                                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                                            <div className="prose prose-sm dark:prose-invert max-w-none pt-2 text-muted-foreground">
                                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                                     {specInfo.description}
                                                 </ReactMarkdown>
                                             </div>
                                         )}
-                                    </div>
-                                )}
-                            </CardHeader>
-                            <CardContent>
-                                <div className="max-h-[500px] overflow-auto">
+                                    </CardHeader>
+                                </Card>
+                            )}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center justify-between">
+                                        <span>Endpoints</span>
+                                        <Badge variant="secondary">{endpoints.length} routes</Badge>
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Click <b>Edit</b> on any endpoint to add custom instructions that guide the AI during generation.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
                                     <EndpointList projectId={project.id} endpoints={endpoints} enrichments={project.enrichments} />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </TabsContent>
 
-                    <div className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Configuration</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div>
-                                    <h3 className="text-lg font-medium mb-4">AppForge AI Context</h3>
-                                    <div className="bg-blue-50/50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-6 text-sm flex gap-2 items-start">
-                                        <div className="mt-0.5">ℹ️</div>
-                                        <div>
-                                            <p className="font-semibold mb-1">Model Recommendation</p>
-                                            <p className="opacity-90 leading-relaxed">Generating a full Next.js App Router application is highly complex. For reliable syntax and logic, we strongly recommend using <b>Anthropic Claude 3.5 Sonnet</b> or <b>OpenAI GPT-4o</b>. Weaker models will frequently hallucinate invalid Next.js routing patterns or broken React hooks.</p>
-                                        </div>
+                    {/* ── Settings Tab ── */}
+                    <TabsContent value="settings" className="mt-4">
+                        <div className="grid gap-4 max-w-2xl mx-auto">
+                            {/* AI Model Config */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Cpu className="h-5 w-5" /> AI Model Configuration
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Choose which LLM provider and model AppForge uses to generate your application.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="mb-4 flex items-start gap-3 p-3 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-200">
+                                        <span className="mt-0.5">ℹ️</span>
+                                        <p>
+                                            For reliable output we recommend <b>Anthropic Claude 3.5 Sonnet</b> or <b>OpenAI GPT-4o</b>.
+                                            Weaker models often produce invalid Next.js routing patterns.
+                                        </p>
                                     </div>
                                     <LlmConfigForm projectId={project.id} initialConfig={llmConfig} />
-                                </div>
-                                <div className="border-t pt-6">
-                                    <h3 className="text-lg font-medium mb-4">Target App Environment Variables</h3>
-                                    <TargetApiConfigForm projectId={project.id} initialConfig={targetApiConfig} />
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
 
-                        <div className="rounded-md border p-4 bg-muted/50">
-                            <h4 className="font-semibold mb-2 text-sm">Project Info</h4>
-                            <div className="text-sm space-y-1">
-                                <p><span className="text-muted-foreground">Endpoints:</span> {endpoints.length}</p>
-                                <p><span className="text-muted-foreground">Enriched:</span> {project.enrichments.length}</p>
-                                <p><span className="text-muted-foreground">Created:</span> {project.createdAt.toLocaleDateString()}</p>
-                            </div>
+                            {/* Target Env Vars */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Terminal className="h-5 w-5" /> Target App Environment Variables
+                                    </CardTitle>
+                                    <CardDescription>
+                                        These are injected into the generated app's <code>.env.local</code> file (e.g. API base URL, tokens).
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <TargetApiConfigForm projectId={project.id} initialConfig={targetApiConfig} />
+                                </CardContent>
+                            </Card>
+
+                            {/* Project Stats */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Project Info</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <dl className="grid grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <dt className="text-muted-foreground">Endpoints</dt>
+                                            <dd className="font-semibold text-lg">{endpoints.length}</dd>
+                                        </div>
+                                        <div>
+                                            <dt className="text-muted-foreground">Enriched</dt>
+                                            <dd className="font-semibold text-lg">{project.enrichments.length}</dd>
+                                        </div>
+                                        <div>
+                                            <dt className="text-muted-foreground">Created</dt>
+                                            <dd className="font-semibold">{project.createdAt.toLocaleDateString()}</dd>
+                                        </div>
+                                    </dl>
+                                </CardContent>
+                            </Card>
+
+                            {/* Danger Zone */}
+                            <Card className="border-destructive/50">
+                                <CardHeader>
+                                    <CardTitle className="text-destructive flex items-center gap-2">
+                                        <AlertTriangle className="h-5 w-5" /> Danger Zone
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Permanently delete this project and all its generated files. This cannot be undone.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <DeleteProjectButton projectId={project.id} />
+                                </CardContent>
+                            </Card>
                         </div>
-                    </div>
-                </div>
+                    </TabsContent>
+                </Tabs>
             )}
         </div>
     )
