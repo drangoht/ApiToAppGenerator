@@ -117,13 +117,13 @@ export const PreviewManager = {
                 };
             }
 
-            // Forcefully apply scripts and critical dependencies regardless of what the LLM generated
-            // We pin Next.js to 14.2.35 and React to 18.2.0 to prevent Next 15 / React 19 breaking changes.
+            // ALWAYS rewrite package.json with pinned dependencies to prevent Next.js 15 from being installed
+            // by old LLM-generated projects which causes Turbopack to be activated by default.
             pkgData.scripts = {
                 ...pkgData.scripts,
-                "dev": "next dev . -H 0.0.0.0",
-                "build": "next build .",
-                "start": "next start . -H 0.0.0.0"
+                "dev": "next dev",
+                "build": "next build",
+                "start": "next start"
             };
             pkgData.dependencies = {
                 ...pkgData.dependencies,
@@ -141,10 +141,25 @@ export const PreviewManager = {
                 "@types/react-dom": "latest",
                 "postcss": "latest",
                 "tailwindcss": "latest",
+                "autoprefixer": "latest",
                 "typescript": "latest"
             };
 
             await fs.writeFile(pkgPath, JSON.stringify(pkgData, null, 2));
+
+            // ALWAYS force a reinstall when package.json changes.
+            // We detect if the installed Next.js version matches the pinned version.
+            // If not (e.g., old project had Next.js 15 installed which uses Turbopack by default), we must reinstall.
+            needsInstall = true; // Unconditionally reinstall to guarantee correct versions
+            try {
+                const installedPkgPath = path.join(cwd, 'node_modules', 'next', 'package.json');
+                const installedNext = JSON.parse(await fs.readFile(installedPkgPath, 'utf-8'));
+                if (installedNext.version === '14.2.35') {
+                    // Correct version already installed, skip reinstall
+                    needsInstall = false;
+                }
+            } catch { }
+
 
             // Ensure a valid tsconfig.json exists. If the LLM didn't generate one properly,
             // Next.js dev server will crash with ERR_INVALID_ARG_TYPE in the TS compiler.
@@ -184,10 +199,18 @@ export const PreviewManager = {
 
             // Dynamic basePath for remote Reverse Proxy tunneling
             const basePath = `/preview/${instance.port}/${instance.projectId}`;
-            // CRITICAL: allowedDevOrigins ensures Next.js dev server does not reject cross-origin /_next/* requests
-            // from the reverse proxy parent appforge domain. Without this, Next.js 15+ throws cross-origin warnings
-            // that block hot-reload and asset loading for the sandboxed preview app.
-            const nextConfigContent = `/** @type {import('next').NextConfig} */\nconst nextConfig = { basePath: "${basePath}", allowedDevOrigins: ['*'], typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" }, eslint: { ignoreDuringBuilds: true } };\nexport default nextConfig;\n`;
+            // CRITICAL: allowedDevOrigins tells the Next.js 14 dev server to accept cross-origin /_next/* requests
+            // from the reverse proxy parent AppForge domain.
+            // We must list the actual public hostname as well as the loopback.
+            const nextConfigContent = `/** @type {import('next').NextConfig} */
+const nextConfig = {
+  basePath: "${basePath}",
+  allowedDevOrigins: ['*'],
+  typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" },
+  eslint: { ignoreDuringBuilds: true }
+};
+export default nextConfig;
+`;
             await fs.writeFile(path.join(cwd, 'next.config.mjs'), nextConfigContent);
 
             // Ensure valid postcss and tailwind configs exist to prevent CSS bundler crashes
@@ -217,9 +240,7 @@ export default config;\n`;
                 NODE_ENV: 'development',
                 NEXT_TELEMETRY_DISABLED: '1',
                 npm_config_cache: '/tmp/.npm-cache',
-                TURBOPACK: '0',
-                TURBO: '0',
-                NEXT_TURBOPACK: '0'
+                HOME: '/tmp'    // Fix npm EACCES: Docker container's node user has no writable home directory
             };
             for (const key in process.env) {
                 if (key.startsWith('__NEXT') || (key.startsWith('NEXT_') && key !== 'NEXT_TELEMETRY_DISABLED')) {

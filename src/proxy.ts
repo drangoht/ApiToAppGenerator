@@ -20,8 +20,11 @@ export default auth((req) => {
         requestHeaders.set('Host', `127.0.0.1:${port}`);
 
         // Pass X-Forwarded headers so Next.js still knows the original client ip/proto if needed
-        requestHeaders.set('x-forwarded-host', req.headers.get('host') || '');
-        requestHeaders.set('x-forwarded-proto', req.headers.get('x-forwarded-proto') || 'https');
+        // CRITICAL DELETION: We MUST delete the x-forwarded-host header! If Next.js 14/15 detects x-forwarded-host, it overrides the 'Host'
+        // resolution locally, and compares appforge.thognard.net against the Origin: 127.0.0.1, instantly throwing a cross-origin error!
+        requestHeaders.delete('x-forwarded-host');
+        requestHeaders.delete('x-forwarded-proto');
+        requestHeaders.delete('forwarded');
 
         return NextResponse.rewrite(proxyUrl, {
             request: {
