@@ -12,9 +12,16 @@ export default auth((req) => {
         const proxyUrl = `http://127.0.0.1:${port}${pathname}${url.search}`;
 
         const requestHeaders = new Headers(req.headers);
+
         // CRITICAL: Next.js dev server WebSocket natively rejects cross-origin connections
         // We MUST deceive the sandboxed Next.js into accepting the proxy tunnel HTTP upgrades
+        // We set the Origin and Host headers to pretend the traffic originated strictly from the sandbox's own local loopback.
         requestHeaders.set('Origin', `http://127.0.0.1:${port}`);
+        requestHeaders.set('Host', `127.0.0.1:${port}`);
+
+        // Pass X-Forwarded headers so Next.js still knows the original client ip/proto if needed
+        requestHeaders.set('x-forwarded-host', req.headers.get('host') || '');
+        requestHeaders.set('x-forwarded-proto', req.headers.get('x-forwarded-proto') || 'https');
 
         return NextResponse.rewrite(proxyUrl, {
             request: {
