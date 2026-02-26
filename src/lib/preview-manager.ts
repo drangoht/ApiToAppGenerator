@@ -254,15 +254,29 @@ export default config;\n`;
                 // Ignore missing directory
             }
 
+            // Patch existing package.json dev script to strip --turbo / --turbopack from legacy LLM-generated projects
+            try {
+                const pkgPath = path.join(cwd, 'package.json');
+                const pkgRaw = await fs.readFile(pkgPath, 'utf8');
+                const pkg = JSON.parse(pkgRaw);
+                if (pkg.scripts?.dev && typeof pkg.scripts.dev === 'string') {
+                    pkg.scripts.dev = pkg.scripts.dev
+                        .replace(/\s*--turbopack/g, '')
+                        .replace(/\s*--no-turbopack/g, '')
+                        .replace(/\s*--turbo(?:\b)/g, '');
+                    await fs.writeFile(pkgPath, JSON.stringify(pkg, null, 2));
+                }
+            } catch (e) { /* ignore */ }
+
             instance.status = 'STARTING';
 
-            // CRITICAL: --no-turbopack forces the stable Webpack compiler regardless of:
-            // - LLM-generated package.json "dev": "next dev --turbo" scripts
-            // - Next.js 15+ defaulting to Turbopack in dev mode
-            // Turbopack's Rust IPC crashes with 'Connection reset by peer (os error 104)' inside Docker volume-mapped containers
-            const devProcess = spawn('npx', ['next', 'dev', '--no-turbopack', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
+            // CRITICAL: Invoke the sandbox's OWN local next binary via node directly, bypassing npm scripts entirely.
+            // This avoids --turbo flag inheritance, npx home-directory EACCES, and version-specific flag incompatibilities.
+            // 'node <cwd>/node_modules/.bin/next dev' works identically on Next.js 14, 15 and 16.
+            const nextBin = path.join(cwd, 'node_modules', '.bin', 'next');
+            const devProcess = spawn('node', [nextBin, 'dev', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
                 cwd,
-                shell: true,
+                shell: false,
                 env: childEnv
             });
             instance.process = devProcess;
