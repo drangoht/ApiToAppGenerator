@@ -10,7 +10,17 @@ export default auth((req) => {
     if (match) {
         const port = match[1];
         const proxyUrl = `http://127.0.0.1:${port}${pathname}${url.search}`;
-        return NextResponse.rewrite(proxyUrl);
+
+        const requestHeaders = new Headers(req.headers);
+        // CRITICAL: Next.js dev server WebSocket natively rejects cross-origin connections
+        // We MUST deceive the sandboxed Next.js into accepting the proxy tunnel HTTP upgrades
+        requestHeaders.set('Origin', `http://127.0.0.1:${port}`);
+
+        return NextResponse.rewrite(proxyUrl, {
+            request: {
+                headers: requestHeaders
+            }
+        });
     }
 
     // Handle Authentication Guards

@@ -216,7 +216,10 @@ export default config;\n`;
             const childEnv: NodeJS.ProcessEnv = {
                 NODE_ENV: 'development',
                 NEXT_TELEMETRY_DISABLED: '1',
-                npm_config_cache: '/tmp/.npm-cache'
+                npm_config_cache: '/tmp/.npm-cache',
+                TURBOPACK: '0',
+                TURBO: '0',
+                NEXT_TURBOPACK: '0'
             };
             for (const key in process.env) {
                 if (key.startsWith('__NEXT') || (key.startsWith('NEXT_') && key !== 'NEXT_TELEMETRY_DISABLED')) {
