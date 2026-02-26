@@ -128,7 +128,6 @@ export function PreviewPanel({ projectId }: { projectId: string }) {
                         src={`${typeof window !== 'undefined' ? window.location.origin : ''}/preview/${port}/${projectId}?_rnd=${Date.now()}`}
                         className="w-full h-full border-0 bg-white"
                         title="App Preview"
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                     />
                 )}
 
