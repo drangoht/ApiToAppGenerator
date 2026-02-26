@@ -81,15 +81,16 @@ export function PreviewPanel({ projectId }: { projectId: string }) {
                     <Button variant="outline" size="sm" onClick={fetchStatus} disabled={isLoading}>
                         <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
-                    {status === 'READY' && port && (
-                        <Button variant="outline" size="sm" onClick={() => {
-                            const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/preview/${port}/${projectId}`;
-                            navigator.clipboard.writeText(url);
-                            toast.success("Public link copied to clipboard!");
-                        }}>
-                            <LinkIcon className="h-4 w-4 mr-2" /> Share Link
-                        </Button>
-                    )}
+                    <Button variant="outline" size="sm" onClick={() => {
+                        // Use the active port if preview is running, otherwise use the last known port
+                        // The shareable URL always routes through the AppForge proxy
+                        const sharePort = port ?? 3100; // fallback to default port range start
+                        const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/preview/${sharePort}/${projectId}`;
+                        navigator.clipboard.writeText(url);
+                        toast.success("Public link copied to clipboard!");
+                    }}>
+                        <LinkIcon className="h-4 w-4 mr-2" /> Share Link
+                    </Button>
                     {(status === 'IDLE' || status === 'ERROR') ? (
                         <Button size="sm" onClick={handleStartPreview} disabled={isLoading}>
                             <Play className="h-4 w-4 mr-2" /> Start App
