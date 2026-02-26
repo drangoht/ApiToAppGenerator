@@ -72,24 +72,44 @@ AppForge takes security seriously. The platform's architecture acts dynamically 
 ## 📖 User Guide
 
 ### 1. Create a New Project
-Begin by navigating to the Dashboard and clicking the **"New Project"** button in the top right corner. Give your project a descriptive name and summary.
+Navigate to the **Dashboard** and click the **"New Project"** button in the top right corner. Give your project a descriptive name and summary.
 
-![AppForge Dashboard Context](./public/docs/dashboard.png)
+![AppForge Dashboard](./public/docs/dashboard.png)
 
 ### 2. Upload OpenAPI Specification
-Once inside your newly created project, upload a valid JSON or YAML **OpenAPI 3.0+ Specification**. This definition acts as the absolute source of truth that the AI will use to generate the React components, network layers, and forms.
+Once inside your newly created project, upload a valid JSON or YAML **OpenAPI 3.0+ Specification**. AppForge will parse all endpoints and display them in the **API Spec** tab.
 
-### 3. Enrich and Configure AI
-AppForge parses your specification and displays all valid REST endpoints. You can inject custom instructions into specific API paths to forcefully guide the AI's rendering logic.
+### 3. Enrich Endpoints & Configure AI — *API Spec & Settings Tabs*
 
-Finally, select your target LLM in the Configuration panel. We strongly recommend using high-parameter models like **Claude 3.5 Sonnet** or **GPT-4o** for robust Next.js generation.
+In the **API Spec** tab, you can click **Edit** on any endpoint to add custom AI instructions that guide the generation logic for that specific route.
 
-![AppForge Live Spec Generator Context](./public/docs/editor.png)
+![AppForge API Spec Tab](./public/docs/project_api_tab.png)
 
-### 4. Generate, Preview, and Download
-Click **Generate Application**. AppForge will efficiently minify your spec to conserve tokens, compile an extensive system prompt covering complex framework routing rules, and execute the completion.
+In the **Settings** tab, choose your target LLM and add any environment variables to be injected into the generated app's `.env.local` file. We strongly recommend **Claude 3.5 Sonnet** or **GPT-4o** for complex Next.js generation.
 
-Once finished, you can test the application dynamically via the built-in isolated sandbox preview. However, for a complete lag-free experience, it is heavily recommended to click **Download Code** and launch the repository natively via `npm run dev`.
+![AppForge Settings Tab](./public/docs/project_settings_tab.png)
+
+### 4. Generate the App
+Click the **Generate App** button in the project header. AppForge compiles your spec, enrichments, and LLM settings into a comprehensive prompt and generates the full Next.js frontend.
+
+### 5. Preview — *Preview Tab*
+
+Click the **Preview** tab to launch the built-in isolated sandbox and see your app running live in an iframe directly in the dashboard. Use **Share Link** to copy a public URL to share the live preview.
+
+![AppForge Preview Tab](./public/docs/project_preview_tab.png)
+
+### 6. Download & Run Locally — *Download Tab*
+
+For the full, stable experience we recommend downloading the source code and running it locally. Click the **Download** tab for one-click ZIP export and ready-to-run instructions.
+
+![AppForge Download Tab](./public/docs/project_download_tab.png)
+
+```bash
+unzip MyProject_generated.zip -d MyProject_app
+cd MyProject_app
+npm install
+npm run dev
+```
 
 ---
 

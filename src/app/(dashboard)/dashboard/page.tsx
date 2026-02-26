@@ -87,14 +87,10 @@ export default async function DashboardPage() {
                             <AccordionContent className="text-muted-foreground pt-4 pb-6">
                                 <div className="space-y-6">
                                     <p className="text-base leading-relaxed">
-                                        Begin by navigating to the Dashboard and clicking the <b>"New Project"</b> button in the top right corner. Give your project a descriptive name and summary.
+                                        Navigate to the Dashboard and click the <b>"New Project"</b> button in the top right corner. Give your project a descriptive name and summary.
                                     </p>
                                     <div className="rounded-xl overflow-hidden border shadow-sm">
-                                        <img
-                                            src="/docs/dashboard.png"
-                                            alt="AppForge Dashboard interface showing project list and New Project button"
-                                            className="w-full object-cover"
-                                        />
+                                        <img src="/docs/dashboard.png" alt="AppForge Dashboard" className="w-full object-cover" />
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -109,7 +105,7 @@ export default async function DashboardPage() {
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground pt-4 pb-6">
                                 <p className="text-base leading-relaxed">
-                                    Once inside your newly created project, upload a valid JSON or YAML <b>OpenAPI 3.0+ Specification</b>. This definition acts as the absolute source of truth that the AI will use to generate the React components, network layers, and forms.
+                                    Once inside your project, upload a valid JSON or YAML <b>OpenAPI 3.0+ Specification</b>. AppForge will parse all endpoints and display them in the <b>API Spec</b> tab.
                                 </p>
                             </AccordionContent>
                         </AccordionItem>
@@ -118,22 +114,16 @@ export default async function DashboardPage() {
                             <AccordionTrigger className="text-lg font-semibold hover:no-underline">
                                 <div className="flex items-center gap-3">
                                     <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-bold">3</span>
-                                    Enrich and Configure AI
+                                    Enrich Endpoints — API Spec Tab
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground pt-4 pb-6">
                                 <div className="space-y-6">
                                     <p className="text-base leading-relaxed">
-                                        AppForge parses your specification and displays all valid REST endpoints. You can inject custom instructions into specific API paths to forcefully guide the AI's rendering logic.
-                                        <br /><br />
-                                        Finally, select your target LLM in the Configuration panel. We strongly recommend using high-parameter models like <b>Claude 3.5 Sonnet</b> or <b>GPT-4o</b> for robust Next.js generation.
+                                        In the <b>API Spec</b> tab, AppForge lists all parsed REST endpoints. Click <b>Edit</b> on any endpoint to add custom AI instructions that guide the generation logic for that specific route.
                                     </p>
                                     <div className="rounded-xl overflow-hidden border shadow-sm">
-                                        <img
-                                            src="/docs/editor.png"
-                                            alt="AppForge Project Interface showing parsed Swagger endpoints and AI Configuration settings"
-                                            className="w-full object-cover"
-                                        />
+                                        <img src="/docs/project_api_tab.png" alt="AppForge API Spec Tab showing endpoints" className="w-full object-cover" />
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -143,15 +133,56 @@ export default async function DashboardPage() {
                             <AccordionTrigger className="text-lg font-semibold hover:no-underline">
                                 <div className="flex items-center gap-3">
                                     <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-bold">4</span>
-                                    Generate, Preview, and Download
+                                    Configure AI — Settings Tab
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground pt-4 pb-6">
-                                <p className="text-base leading-relaxed">
-                                    Click <b>Generate Application</b>. AppForge will efficiently minify your spec to conserve tokens, compile an extensive system prompt covering complex framework routing rules, and execute the completion.
-                                    <br /><br />
-                                    Once finished, you can test the application dynamically via the built-in isolated sandbox preview. However, for a complete lag-free experience, it is heavily recommended to click <b>Download Code</b> and launch the repository natively via `npm run dev`.
-                                </p>
+                                <div className="space-y-6">
+                                    <p className="text-base leading-relaxed">
+                                        In the <b>Settings</b> tab, select your target LLM and add environment variables to inject into the generated app's <code>.env.local</code>. We strongly recommend <b>Claude 3.5 Sonnet</b> or <b>GPT-4o</b> for robust Next.js generation.
+                                    </p>
+                                    <div className="rounded-xl overflow-hidden border shadow-sm">
+                                        <img src="/docs/project_settings_tab.png" alt="AppForge Settings Tab with AI configuration" className="w-full object-cover" />
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="step-5" className="border bg-card px-6 py-2 rounded-lg shadow-sm">
+                            <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                                <div className="flex items-center gap-3">
+                                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-bold">5</span>
+                                    Generate & Preview — Preview Tab
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="text-muted-foreground pt-4 pb-6">
+                                <div className="space-y-6">
+                                    <p className="text-base leading-relaxed">
+                                        Click <b>Generate App</b> in the header. Once generation is complete, go to the <b>Preview</b> tab to launch the isolated sandbox and see your app running live. Use <b>Share Link</b> to copy a public URL for sharing.
+                                    </p>
+                                    <div className="rounded-xl overflow-hidden border shadow-sm">
+                                        <img src="/docs/project_preview_tab.png" alt="AppForge Preview Tab with live sandbox" className="w-full object-cover" />
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="step-6" className="border bg-card px-6 py-2 rounded-lg shadow-sm">
+                            <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                                <div className="flex items-center gap-3">
+                                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-bold">6</span>
+                                    Download & Run Locally — Download Tab
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="text-muted-foreground pt-4 pb-6">
+                                <div className="space-y-6">
+                                    <p className="text-base leading-relaxed">
+                                        For the most stable, feature-complete experience, go to the <b>Download</b> tab and export the full source code as a ZIP. Run it locally with <code>npm install && npm run dev</code> for a production-quality experience.
+                                    </p>
+                                    <div className="rounded-xl overflow-hidden border shadow-sm">
+                                        <img src="/docs/project_download_tab.png" alt="AppForge Download Tab with run-locally instructions" className="w-full object-cover" />
+                                    </div>
+                                </div>
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>
