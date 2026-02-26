@@ -243,6 +243,11 @@ export default config;\n`;
                 HOME: '/tmp'    // Fix npm EACCES: Docker container's node user has no writable home directory
             };
             for (const key in process.env) {
+                // CRITICAL: Never inherit NODE_ENV from the parent Docker container (it is 'production').
+                // Next.js dev server MUST see NODE_ENV='development' or it activates production-mode
+                // code paths that are incompatible with the Turbopack SWC IPC socket, causing the crash.
+                // Also block HOME since we set it to /tmp above to fix npm EACCES.
+                if (key === 'NODE_ENV' || key === 'HOME') continue;
                 if (key.startsWith('__NEXT') || (key.startsWith('NEXT_') && key !== 'NEXT_TELEMETRY_DISABLED')) {
                     continue;
                 }
