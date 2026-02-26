@@ -16,7 +16,8 @@ export default auth((req) => {
         // Spoof Origin & Host so Next.js dev server accepts cross-origin WebSocket upgrades
         requestHeaders.set('Origin', `http://127.0.0.1:${port}`);
         requestHeaders.set('Host', `127.0.0.1:${port}`);
-        // Delete x-forwarded-host — if Next.js sees it, it overrides Host resolution and throws cross-origin errors
+        // Next.js 15+ validates Referer against Origin — delete it so there's no mismatch → 403
+        requestHeaders.delete('referer');
         requestHeaders.delete('x-forwarded-host');
         requestHeaders.delete('x-forwarded-proto');
         requestHeaders.delete('forwarded');
@@ -42,6 +43,8 @@ export default auth((req) => {
             const requestHeaders = new Headers(req.headers);
             requestHeaders.set('Origin', `http://127.0.0.1:${port}`);
             requestHeaders.set('Host', `127.0.0.1:${port}`);
+            // Delete Referer so Next.js 15+ doesn't see the external host and block with 403
+            requestHeaders.delete('referer');
             requestHeaders.delete('x-forwarded-host');
             requestHeaders.delete('x-forwarded-proto');
             requestHeaders.delete('forwarded');

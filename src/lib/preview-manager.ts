@@ -208,13 +208,16 @@ export const PreviewManager = {
 
             // Dynamic basePath for remote Reverse Proxy tunneling
             const basePath = `/preview/${instance.port}/${instance.projectId}`;
-            // CRITICAL: allowedDevOrigins tells the Next.js 14 dev server to accept cross-origin /_next/* requests
-            // from the reverse proxy parent AppForge domain.
-            // We must list the actual public hostname as well as the loopback.
+            // allowedDevOrigins: tells the Next.js dev server to accept cross-origin /_next/* requests
+            // from the reverse proxy. We read the actual public hostname from the AUTH_URL env var.
+            // Wildcards are NOT supported by Next.js — we must list the real hostname explicitly.
+            const publicHost = (process.env.AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000')
+                .replace(/^https?:\/\//, '')   // strip protocol
+                .replace(/\/.*$/, '');          // strip path
             const nextConfigContent = `/** @type {import('next').NextConfig} */
 const nextConfig = {
   basePath: "${basePath}",
-  allowedDevOrigins: ['*'],
+  allowedDevOrigins: ["${publicHost}", "localhost"],
   typescript: { ignoreBuildErrors: true, tsconfigPath: "tsconfig.json" },
   eslint: { ignoreDuringBuilds: true }
 };
