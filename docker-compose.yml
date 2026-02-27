@@ -1,5 +1,6 @@
 services:
   Apivolt:
+    image: drangoht/apivolt:latest
     build:
       context: .
       dockerfile: Dockerfile

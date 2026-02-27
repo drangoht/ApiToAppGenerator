@@ -194,7 +194,7 @@ To deploy Apivolt to a remote server without pulling the full source code, you c
    ```yaml
    services:
      Apivolt:
-       image: drangoht/Apivolt:latest
+       image: drangoht/apivolt:latest
        container_name: Apivolt_web
        ports:
          - "3000:3000"
