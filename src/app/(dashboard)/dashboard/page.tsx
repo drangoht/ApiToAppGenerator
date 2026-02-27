@@ -70,7 +70,7 @@ export default async function DashboardPage() {
             <div className="mt-20 pt-16 border-t border-border/40">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold tracking-tight mb-4 flex items-center justify-center gap-2">
-                        <Beaker className="h-8 w-8 text-indigo-500" /> How to use AppForge
+                        <Beaker className="h-8 w-8 text-indigo-500" /> How to use Apivolt
                     </h2>
                     <p className="text-muted-foreground text-lg">Follow this quick tutorial to generate your first application.</p>
                 </div>
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
                                         Navigate to the Dashboard and click the <b>"New Project"</b> button in the top right corner. Give your project a descriptive name and summary.
                                     </p>
                                     <div className="rounded-xl overflow-hidden border shadow-sm">
-                                        <img src="/docs/dashboard.png" alt="AppForge Dashboard" className="w-full object-cover" />
+                                        <img src="/docs/dashboard.png" alt="Apivolt Dashboard" className="w-full object-cover" />
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -105,7 +105,7 @@ export default async function DashboardPage() {
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground pt-4 pb-6">
                                 <p className="text-base leading-relaxed">
-                                    Once inside your project, upload a valid JSON or YAML <b>OpenAPI 3.0+ Specification</b>. AppForge will parse all endpoints and display them in the <b>API Spec</b> tab.
+                                    Once inside your project, upload a valid JSON or YAML <b>OpenAPI 3.0+ Specification</b>. Apivolt will parse all endpoints and display them in the <b>API Spec</b> tab.
                                 </p>
                             </AccordionContent>
                         </AccordionItem>
@@ -120,10 +120,10 @@ export default async function DashboardPage() {
                             <AccordionContent className="text-muted-foreground pt-4 pb-6">
                                 <div className="space-y-6">
                                     <p className="text-base leading-relaxed">
-                                        In the <b>API Spec</b> tab, AppForge lists all parsed REST endpoints. Click <b>Edit</b> on any endpoint to add custom AI instructions that guide the generation logic for that specific route.
+                                        In the <b>API Spec</b> tab, Apivolt lists all parsed REST endpoints. Click <b>Edit</b> on any endpoint to add custom AI instructions that guide the generation logic for that specific route.
                                     </p>
                                     <div className="rounded-xl overflow-hidden border shadow-sm">
-                                        <img src="/docs/project_api_tab.png" alt="AppForge API Spec Tab showing endpoints" className="w-full object-cover" />
+                                        <img src="/docs/project_api_tab.png" alt="Apivolt API Spec Tab showing endpoints" className="w-full object-cover" />
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -142,7 +142,7 @@ export default async function DashboardPage() {
                                         In the <b>Settings</b> tab, select your target LLM and add environment variables to inject into the generated app's <code>.env.local</code>. We strongly recommend <b>Claude 3.5 Sonnet</b> or <b>GPT-4o</b> for robust Next.js generation.
                                     </p>
                                     <div className="rounded-xl overflow-hidden border shadow-sm">
-                                        <img src="/docs/project_settings_tab.png" alt="AppForge Settings Tab with AI configuration" className="w-full object-cover" />
+                                        <img src="/docs/project_settings_tab.png" alt="Apivolt Settings Tab with AI configuration" className="w-full object-cover" />
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -161,7 +161,7 @@ export default async function DashboardPage() {
                                         Click <b>Generate App</b> in the header. Once generation is complete, go to the <b>Preview</b> tab to launch the isolated sandbox and see your app running live. Use <b>Share Link</b> to copy a public URL for sharing.
                                     </p>
                                     <div className="rounded-xl overflow-hidden border shadow-sm">
-                                        <img src="/docs/project_preview_tab.png" alt="AppForge Preview Tab with live sandbox" className="w-full object-cover" />
+                                        <img src="/docs/project_preview_tab.png" alt="Apivolt Preview Tab with live sandbox" className="w-full object-cover" />
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -180,7 +180,7 @@ export default async function DashboardPage() {
                                         For the most stable, feature-complete experience, go to the <b>Download</b> tab and export the full source code as a ZIP. Run it locally with <code>npm install && npm run dev</code> for a production-quality experience.
                                     </p>
                                     <div className="rounded-xl overflow-hidden border shadow-sm">
-                                        <img src="/docs/project_download_tab.png" alt="AppForge Download Tab with run-locally instructions" className="w-full object-cover" />
+                                        <img src="/docs/project_download_tab.png" alt="Apivolt Download Tab with run-locally instructions" className="w-full object-cover" />
                                     </div>
                                 </div>
                             </AccordionContent>

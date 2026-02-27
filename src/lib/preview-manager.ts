@@ -290,7 +290,7 @@ export default config;
             // We MUST explicitly clear NODE_ENV=production from the Docker container's environment
             // when spawning the Next.js tools, otherwise Next.js 14.2 gets deeply confused
             // during compiler initialization and crashes with ERR_INVALID_ARG_TYPE seeking undefined paths.
-            // CRITICAL: We also MUST strip all internal NEXT_ and __NEXT_ variables inherited from the AppForge Next.js 
+            // CRITICAL: We also MUST strip all internal NEXT_ and __NEXT_ variables inherited from the Apivolt Next.js 
             // parent process, otherwise the child Next.js process skips loading next.config.mjs because it thinks it is
             // inside a different build phase!
             const childEnv: NodeJS.ProcessEnv = {

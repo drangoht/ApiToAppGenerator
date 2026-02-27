@@ -42,11 +42,11 @@ This document outlines the implemented features and verification steps for the A
     -   **Fix**: Forced global `package.json` resolutions for vulnerable packages (e.g. `glob@11`). Note: `node-domexception` is a known unpatched upstream Shadcn warning that is safe to ignore.
 5.  **Next.js 14 Sandbox `path.join` Regression**:
     -   **Issue**: Dev server fatally crashed with `ERR_INVALID_ARG_TYPE: path must be string` at `verifyTypeScriptSetup:87` specifically inside Docker child processes.
-    -   **Fix**: Isolated the AppForge Sandbox environment variables. Because AppForge itself comprises a Next.js server, we discovered its `process.env` forcefully leaked native internal runtime locks (`__NEXT_PROCESSED_ENV`, `__NEXT_PRIVATE_PREBUNDLED_REACT`) into the spawned sandboxed application via `Object.assign()`. This completely corrupted the nested `npm run dev` sandbox, instructing it to bypass explicit `.mjs` configuration loading, dropping `tsconfigPath`. We eliminated this bug by recursively stripping all `__NEXT` namespaces before executing node clones.
+    -   **Fix**: Isolated the Apivolt Sandbox environment variables. Because Apivolt itself comprises a Next.js server, we discovered its `process.env` forcefully leaked native internal runtime locks (`__NEXT_PROCESSED_ENV`, `__NEXT_PRIVATE_PREBUNDLED_REACT`) into the spawned sandboxed application via `Object.assign()`. This completely corrupted the nested `npm run dev` sandbox, instructing it to bypass explicit `.mjs` configuration loading, dropping `tsconfigPath`. We eliminated this bug by recursively stripping all `__NEXT` namespaces before executing node clones.
 
 6.  **Remote HTTPS & Mixed-Content Preview Blocking**:
     -   **Issue**: When deployed to a remote server (e.g., behind NGINX with SSL), the Live Preview iframe attempted to connect directly to the raw mapped `http://...:port` or `localhost`, intentionally violating the browser's Mixed Content security enforcement and causing the remote preview to silently fail.
-    -   **Fix**: Transformed the AppForge host application into a dynamic transparent Edge proxy. A new `src/middleware.ts` was implemented to seamlessly intercept traffic to `/preview/:port/:projectId/` across the parent HTTPS SSL tunnel. Simultaneously, `preview-manager.ts` forces Next.js children to resolve their active `basePath` mapping dynamically. The frontend `iframe` now requests the proxy subpath on its own parent `window.location.origin`, completely evading protocol discrepancies without exposing additional open NGINX backend ports.
+    -   **Fix**: Transformed the Apivolt host application into a dynamic transparent Edge proxy. A new `src/middleware.ts` was implemented to seamlessly intercept traffic to `/preview/:port/:projectId/` across the parent HTTPS SSL tunnel. Simultaneously, `preview-manager.ts` forces Next.js children to resolve their active `basePath` mapping dynamically. The frontend `iframe` now requests the proxy subpath on its own parent `window.location.origin`, completely evading protocol discrepancies without exposing additional open NGINX backend ports.
 
 7.  **Turbopack Docker IPC Socket Crash**:
     -   **Issue**: The preview sandbox intermittently suffered fatal Next.js crashes with `os error 104 (Connection reset by peer)` originating inside the Rust CSS compilation worker. This was caused by modern LLMs implicitly generating `"dev": "next dev --turbo"` inside the isolated project `package.json`, forcing Turbopack into unstable Docker mapped Volume environments lacking robust IPC memory.
@@ -77,11 +77,11 @@ By popular demand, the root `/` routing constraint has been lifted to natively s
 
 The documentation natively embeds real-world architectural screenshots generated dynamically by the in-house continuous integration Browser subagent:
 
-**1. Creating a Custom AppForge Project Instance**
-![AppForge Dashboard Context](C:/Users/drang/.gemini/antigravity/brain/6f4bdc10-182d-4592-bae5-28ccf8a91e8f/project_dashboard_1771784085739.png)
+**1. Creating a Custom Apivolt Project Instance**
+![Apivolt Dashboard Context](C:/Users/drang/.gemini/antigravity/brain/6f4bdc10-182d-4592-bae5-28ccf8a91e8f/project_dashboard_1771784085739.png)
 
 **2. Providing Prompts and API Schematics to target models**
-![AppForge Live Spec Generator Context](C:/Users/drang/.gemini/antigravity/brain/6f4bdc10-182d-4592-bae5-28ccf8a91e8f/project_details_1771784111459.png)
+![Apivolt Live Spec Generator Context](C:/Users/drang/.gemini/antigravity/brain/6f4bdc10-182d-4592-bae5-28ccf8a91e8f/project_details_1771784111459.png)
 
 ## Update: OWASP Security Audit (Feb 2026)
 A comprehensive security review was conducted targeting potential input-driven vulnerabilities across the API-to-App Generator ecosystem.

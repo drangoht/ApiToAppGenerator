@@ -19,8 +19,8 @@ export default async function DashboardLayout({
         <div className="flex min-h-screen flex-col bg-background/95">
             <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b border-border/40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 shadow-sm">
                 <Link href="/dashboard" className="flex items-center gap-3 font-bold hover:text-primary transition-colors text-lg" title="Return to Dashboard">
-                    <img src="/logo.png" alt="AppForge Logo" className="h-7 w-7 rounded-md shadow-sm" />
-                    <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-violet-400">AppForge</span>
+                    <img src="/logo.png" alt="Apivolt Logo" className="h-7 w-7 rounded-md shadow-sm" />
+                    <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-violet-400">Apivolt</span>
                 </Link>
                 <div className="ml-auto flex items-center gap-4">
                     <ThemeToggle />

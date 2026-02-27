@@ -1,16 +1,16 @@
 services:
-  appforge:
+  Apivolt:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: appforge_web
+    container_name: Apivolt_web
     ports:
       - "3000:3000"
       - "3100-3110:3100-3110"
     environment:
       - NODE_ENV=production
       - AUTH_TRUST_HOST=true
-      - AUTH_SECRET=appforge_super_secret_key_123
+      - AUTH_SECRET=Apivolt_super_secret_key_123
       - DATABASE_URL=file:./dev.db
       # - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:

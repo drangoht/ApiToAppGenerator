@@ -14,7 +14,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="flex-1 flex flex-col items-center justify-center text-center px-4 py-24 md:py-32 bg-gradient-to-b from-background to-muted/20">
         <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 mb-6">
-          AppForge v1.0
+          Apivolt v1.0
         </div>
         <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 max-w-4xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
           From API Spec to Full-Stack App in Seconds
@@ -70,7 +70,7 @@ export default function Home() {
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight mb-4 flex items-center justify-center gap-2">
-              <Beaker className="h-8 w-8 text-indigo-500" /> How to use AppForge
+              <Beaker className="h-8 w-8 text-indigo-500" /> How to use Apivolt
             </h2>
             <p className="text-muted-foreground text-lg">Follow this quick tutorial to generate your first application.</p>
           </div>
@@ -91,7 +91,7 @@ export default function Home() {
                   <div className="rounded-xl overflow-hidden border shadow-sm">
                     <img
                       src="/docs/dashboard.png"
-                      alt="AppForge Dashboard interface showing project list and New Project button"
+                      alt="Apivolt Dashboard interface showing project list and New Project button"
                       className="w-full object-cover"
                     />
                   </div>
@@ -123,14 +123,14 @@ export default function Home() {
               <AccordionContent className="text-muted-foreground pt-4 pb-6">
                 <div className="space-y-6">
                   <p className="text-base leading-relaxed">
-                    AppForge parses your specification and displays all valid REST endpoints. You can inject custom instructions into specific API paths to forcefully guide the AI's rendering logic.
+                    Apivolt parses your specification and displays all valid REST endpoints. You can inject custom instructions into specific API paths to forcefully guide the AI's rendering logic.
                     <br /><br />
                     Finally, select your target LLM in the Configuration panel. We strongly recommend using high-parameter models like <b>Claude 3.5 Sonnet</b> or <b>GPT-4o</b> for robust Next.js generation.
                   </p>
                   <div className="rounded-xl overflow-hidden border shadow-sm">
                     <img
                       src="/docs/editor.png"
-                      alt="AppForge Project Interface showing parsed Swagger endpoints and AI Configuration settings"
+                      alt="Apivolt Project Interface showing parsed Swagger endpoints and AI Configuration settings"
                       className="w-full object-cover"
                     />
                   </div>
@@ -147,7 +147,7 @@ export default function Home() {
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground pt-4 pb-6">
                 <p className="text-base leading-relaxed">
-                  Click <b>Generate Application</b>. AppForge will efficiently minify your spec to conserve tokens, compile an extensive system prompt covering complex framework routing rules, and execute the completion.
+                  Click <b>Generate Application</b>. Apivolt will efficiently minify your spec to conserve tokens, compile an extensive system prompt covering complex framework routing rules, and execute the completion.
                   <br /><br />
                   Once finished, you can test the application dynamically via the built-in isolated sandbox preview. However, for a complete lag-free experience, it is heavily recommended to click <b>Download Code</b> and launch the repository natively via `npm run dev`.
                 </p>

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AppForge",
+  title: "Apivolt",
   description: "The ultimate API-to-App AI Generator",
 };
 

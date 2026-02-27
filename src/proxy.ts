@@ -27,10 +27,10 @@ export default auth((req) => {
 
     // ── 2. Turbopack / HMR chunk proxy ──────────────────────────────────────
     // Turbopack generates /_next/… chunk URLs that do NOT include the basePath prefix.
-    // These requests arrive at AppForge directly (no /preview/:port/ in path).
+    // These requests arrive at Apivolt directly (no /preview/:port/ in path).
     // We detect them via the Referer header which DOES contain the port.
     //
-    // Example: Referer = https://appforge.thognard.net/preview/3100/abc123
+    // Example: Referer = https://Apivolt.thognard.net/preview/3100/abc123
     //          Request  = /_next/[turbopack]_dev_client_38d.js   → 403 ❌
     //          Fix      = proxy to http://127.0.0.1:3100/_next/[turbopack]_dev_client_38d.js ✅
     if (pathname.startsWith('/_next/')) {
