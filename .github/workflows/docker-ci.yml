@@ -1,13 +1,13 @@
-name: Docker CI
+name: Docker CI / CD
 
 on:
   push:
-    branches: [ "master", "test-suite" ]
+    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -37,7 +37,7 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: Log in to Docker Hub
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -47,14 +47,31 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+          push: ${{ github.event_name == 'push' }}
           tags: drangoht/apivolt:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
-      # This ugly bit is necessary if you don't want to cache growing over time.
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
+      # ── Auto-deploy to production server via SSH ──────────────────────────
+      # Requires 4 GitHub secrets:
+      #   SSH_HOST         — your server hostname or IP (e.g. thognard.net)
+      #   SSH_USER         — SSH login user (e.g. ubuntu, root)
+      #   SSH_PRIVATE_KEY  — contents of your ~/.ssh/id_rsa private key
+      #   SSH_DEPLOY_PATH  — path to docker-compose.yml on server (e.g. /home/ubuntu/apivolt)
+      - name: Deploy to production server
+        if: github.event_name == 'push'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.SSH_DEPLOY_PATH }}
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
