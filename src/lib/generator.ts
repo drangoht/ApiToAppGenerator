@@ -311,11 +311,11 @@ export class GeneratorService {
             pkg.scripts.start = "next start";
 
             // Force override core Next.js 14 / React 18 dependencies.
-            // If the LLM generates Next.js 12 (pre-App Router), the preview will completely crash.
+            // Pin EXACT versions (no caret) so npm never resolves to Next.js 15+/16 which uses Turbopack by default.
             const forceDeps: Record<string, string> = {
-                "next": "^14.2.0",
-                "react": "^18.2.0",
-                "react-dom": "^18.2.0",
+                "next": "14.2.35",
+                "react": "18.2.0",
+                "react-dom": "18.2.0",
                 "axios": "^1.6.0",
                 "zustand": "^4.4.0",
                 "lucide-react": "^0.292.0",
@@ -333,7 +333,9 @@ export class GeneratorService {
                 "@types/react-dom": "^18.2.0",
                 "postcss": "^8.4.31",
                 "tailwindcss": "^3.4.0",
-                "autoprefixer": "^10.4.19"
+                "autoprefixer": "^10.4.19",
+                "eslint": "^8.0.0",
+                "eslint-config-next": "14.2.35"
             };
 
             for (const [dep, version] of Object.entries(forceDeps)) {
