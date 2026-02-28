@@ -16,6 +16,10 @@ export class GeneratorService {
         if (this.model.startsWith("openrouter/")) {
             baseURL = "https://openrouter.ai/api/v1";
             this.model = this.model.replace("openrouter/", "");
+            // Overrides default OPENAI_API_KEY if we are obviously using OpenRouter
+            if (!apiKey) {
+                apiKey = process.env.OPENROUTER_API_KEY;
+            }
         }
 
         this.openai = new OpenAI({
