@@ -1,6 +1,6 @@
-# AppForge LLM Generation Prompts
+# Apivolt LLM Generation Prompts
 
-AppForge uses a powerful set of System and User prompts to enforce strict Next.js App Router rules and guide the target Large Language Model (e.g., GPT-4o, Claude 3.5 Sonnet) to generate fully functional, deployable React applications.
+Apivolt uses a powerful set of System and User prompts to enforce strict Next.js App Router rules and guide the target Large Language Model (e.g., GPT-4o, Claude 3.5 Sonnet) to generate fully functional, deployable React applications.
 
 Below are the exact prompt templates utilized by the internal `GeneratorService` (`src/lib/generator.ts`) to bridge raw OpenAPI specifications into usable frontend code.
 

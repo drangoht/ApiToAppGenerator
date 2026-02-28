@@ -106,7 +106,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                     <div className="text-center">
                         <h2 className="text-xl font-semibold mb-2">Upload your OpenAPI Specification</h2>
                         <p className="text-muted-foreground text-sm mb-6 max-w-md">
-                            Upload a JSON or YAML OpenAPI specification to get started. AppForge will analyze it and generate a full Next.js frontend application.
+                            Upload a JSON or YAML OpenAPI specification to get started. Apivolt will analyze it and generate a full Next.js frontend application.
                         </p>
                     </div>
                     <UploadSpecForm projectId={project.id} />
@@ -249,7 +249,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                                         <Cpu className="h-5 w-5" /> AI Model Configuration
                                     </CardTitle>
                                     <CardDescription>
-                                        Choose which LLM provider and model AppForge uses to generate your application.
+                                        Choose which LLM provider and model Apivolt uses to generate your application.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>

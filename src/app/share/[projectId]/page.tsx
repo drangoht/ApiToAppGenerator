@@ -39,7 +39,7 @@ export default function SharePage({ params }: { params: Promise<{ projectId: str
         <div className="fixed inset-0 bg-black flex flex-col">
             {/* Thin top bar */}
             <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 text-sm text-zinc-400 flex-shrink-0">
-                <span className="font-semibold text-white">AppForge Preview</span>
+                <span className="font-semibold text-white">Apivolt Preview</span>
                 <div className="flex items-center gap-2">
                     <span className={`inline-block h-2 w-2 rounded-full ${status === 'READY' ? 'bg-green-400' : status === 'ERROR' ? 'bg-red-400' : 'bg-yellow-400 animate-pulse'}`} />
                     <span>{status === 'READY' ? 'Running' : status === 'IDLE' ? 'Not Started' : status === 'INSTALLING' ? 'Installing...' : status === 'STARTING' ? 'Starting...' : 'Error'}</span>
@@ -68,7 +68,7 @@ export default function SharePage({ params }: { params: Promise<{ projectId: str
                                 <p className="text-lg font-medium text-zinc-300">Preview not started</p>
                                 <p className="text-sm text-center max-w-sm">
                                     This app preview is not currently running.<br />
-                                    The project owner needs to start it from the AppForge dashboard.
+                                    The project owner needs to start it from the Apivolt dashboard.
                                 </p>
                             </>
                         ) : status === 'ERROR' ? (
