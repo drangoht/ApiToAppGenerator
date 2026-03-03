@@ -5,6 +5,28 @@ import fs from 'fs/promises';
 
 type PreviewStatus = 'IDLE' | 'INSTALLING' | 'STARTING' | 'READY' | 'ERROR';
 
+/**
+ * Returns the correct command and arguments to start the Next.js dev server
+ * for the given project directory.
+ *
+ * On Windows, `.bin/next` is a bash wrapper — we must use `.bin/next.cmd` instead.
+ * On Linux/Docker, we invoke the JS entry point via `node` directly, which bypasses
+ * npm script overhead and prevents Turbopack flag inheritance.
+ */
+function resolveNextDevCommand(cwd: string, port: number): { cmd: string; args: string[] } {
+    const binDir = path.join(cwd, 'node_modules', '.bin');
+    if (process.platform === 'win32') {
+        return {
+            cmd: path.join(binDir, 'next.cmd'),
+            args: ['dev', '-p', port.toString(), '-H', '0.0.0.0'],
+        };
+    }
+    return {
+        cmd: 'node',
+        args: [path.join(binDir, 'next'), 'dev', '-p', port.toString(), '-H', '0.0.0.0'],
+    };
+}
+
 interface PreviewInstance {
     projectId: string;
     port: number | null;
@@ -356,29 +378,8 @@ export default config;
 
             instance.status = 'STARTING';
 
-            // CRITICAL: On Windows, node_modules/.bin/next is a bash shell wrapper script,
-            // so spawning it with `node` causes a JS parse error ("missing ) after argument list").
-            // On Windows we must use `next.cmd`. On Linux/Docker we invoke `node next` directly
-            // (the binary is a real JS file on Linux), which avoids npx/npm overhead and
-            // --turbo flag inheritance.
-            const isWindows = process.platform === 'win32';
-            let devProcess: ReturnType<typeof spawn>;
-
-            if (isWindows) {
-                const nextCmd = path.join(cwd, 'node_modules', '.bin', 'next.cmd');
-                devProcess = spawn(nextCmd, ['dev', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
-                    cwd,
-                    shell: false,
-                    env: childEnv
-                });
-            } else {
-                const nextBin = path.join(cwd, 'node_modules', '.bin', 'next');
-                devProcess = spawn('node', [nextBin, 'dev', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
-                    cwd,
-                    shell: false,
-                    env: childEnv
-                });
-            }
+            const { cmd, args } = resolveNextDevCommand(cwd, instance.port!);
+            const devProcess = spawn(cmd, args, { cwd, shell: false, env: childEnv });
             instance.process = devProcess;
 
             devProcess.stdout?.on('data', async (data: any) => {
