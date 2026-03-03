@@ -6,24 +6,18 @@ import fs from 'fs/promises';
 type PreviewStatus = 'IDLE' | 'INSTALLING' | 'STARTING' | 'READY' | 'ERROR';
 
 /**
- * Returns the correct command and arguments to start the Next.js dev server
- * for the given project directory.
+ * Returns the command and arguments to start the Next.js dev server.
  *
- * On Windows, `.bin/next` is a bash wrapper — we must use `.bin/next.cmd` instead.
- * On Linux/Docker, we invoke the JS entry point via `node` directly, which bypasses
- * npm script overhead and prevents Turbopack flag inheritance.
+ * We always invoke node_modules/next/dist/bin/next directly via `node`.
+ * This is a plain JS file that works on every platform without wrappers,
+ * so shell: false is safe and there is no OS-specific branching needed.
+ * It also bypasses npm script overhead and prevents --turbo flag inheritance.
  */
 function resolveNextDevCommand(cwd: string, port: number): { cmd: string; args: string[] } {
-    const binDir = path.join(cwd, 'node_modules', '.bin');
-    if (process.platform === 'win32') {
-        return {
-            cmd: path.join(binDir, 'next.cmd'),
-            args: ['dev', '-p', port.toString(), '-H', '0.0.0.0'],
-        };
-    }
+    const nextEntry = path.join(cwd, 'node_modules', 'next', 'dist', 'bin', 'next');
     return {
         cmd: 'node',
-        args: [path.join(binDir, 'next'), 'dev', '-p', port.toString(), '-H', '0.0.0.0'],
+        args: [nextEntry, 'dev', '-p', port.toString(), '-H', '0.0.0.0'],
     };
 }
 
