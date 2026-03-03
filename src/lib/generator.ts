@@ -1,32 +1,17 @@
 import { prisma } from "@/lib/prisma"
-import OpenAI from "openai"
+import { createLlmClient, resolveLlmConfig } from "@/lib/llm-client"
 import fs from "fs/promises"
 import path from "path"
 
 export class GeneratorService {
-    private openai: OpenAI;
     private projectId: string;
     private model: string;
+    private apiKey?: string;
 
     constructor(projectId: string, apiKey?: string, model: string = "gpt-4-turbo") {
         this.projectId = projectId;
         this.model = model;
-
-        let baseURL = undefined;
-        if (this.model.startsWith("openrouter/")) {
-            baseURL = "https://openrouter.ai/api/v1";
-            this.model = this.model.replace("openrouter/", "");
-            // Overrides default OPENAI_API_KEY if we are obviously using OpenRouter
-            if (!apiKey) {
-                apiKey = process.env.OPENROUTER_API_KEY;
-            }
-        }
-
-        this.openai = new OpenAI({
-            apiKey: apiKey || process.env.OPENAI_API_KEY,
-            baseURL: baseURL,
-            timeout: 240_000, // 4-minute explicit timeout
-        });
+        this.apiKey = apiKey;
     }
 
     private minifyOpenApiSpec(spec: any): any {
@@ -214,8 +199,12 @@ export class GeneratorService {
         // A single context window might be small for a huge app, but for a demo it's fine.
 
         try {
-            const completion = await this.openai.chat.completions.create({
-                model: this.model,
+            const { client, model } = createLlmClient(
+                resolveLlmConfig(null, { model: this.model, apiKey: this.apiKey }),
+                240_000
+            );
+            const completion = await client.chat.completions.create({
+                model,
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userPrompt }

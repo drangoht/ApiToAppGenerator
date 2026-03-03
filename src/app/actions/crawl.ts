@@ -4,12 +4,12 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { parseOpenApiSpec } from "@/lib/openapi-parser"
+import { createLlmClient, resolveLlmConfig } from "@/lib/llm-client"
 import * as cheerio from "cheerio"
-import OpenAI from "openai"
 
-const CRAWL_MAX_PAGES = 20         // Maximum pages to crawl
-const CRAWL_MAX_CHARS = 80000      // Max total characters to send to LLM
-const CRAWL_PAGE_TIMEOUT_MS = 10000 // 10-second timeout per page fetch
+const CRAWL_MAX_PAGES = 20
+const CRAWL_MAX_CHARS = 80000
+const CRAWL_PAGE_TIMEOUT_MS = 10000
 
 /**
  * Fetches a single page and returns:
@@ -18,9 +18,7 @@ const CRAWL_PAGE_TIMEOUT_MS = 10000 // 10-second timeout per page fetch
  */
 async function fetchPage(url: string, baseOrigin: string): Promise<{ text: string; links: string[] }> {
     const response = await fetch(url, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; Apivolt/1.0 Crawler)',
-        },
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Apivolt/1.0 Crawler)' },
         signal: AbortSignal.timeout(CRAWL_PAGE_TIMEOUT_MS),
     })
 
@@ -32,29 +30,32 @@ async function fetchPage(url: string, baseOrigin: string): Promise<{ text: strin
     const html = await response.text()
     const $ = cheerio.load(html)
 
-    // Extract all same-origin links before stripping tags
     const links: string[] = []
     $('a[href]').each((_, el) => {
         const href = $(el).attr('href') || ''
         try {
             const resolved = new URL(href, url)
-            // Only follow links from the same origin and without external anchors
-            if (resolved.origin === baseOrigin && !resolved.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|css|js|pdf|zip)$/i)) {
-                // Drop fragments from the link so we don't revisit same page
+            if (
+                resolved.origin === baseOrigin &&
+                !resolved.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|css|js|pdf|zip)$/i)
+            ) {
                 resolved.hash = ''
                 links.push(resolved.toString())
             }
-        } catch { /* relative link resolution failed, skip */ }
+        } catch { /* skip unresolvable hrefs */ }
     })
 
-    // Remove noise before extracting text
     $('script, style, noscript, iframe, link, meta, nav, footer, header').remove()
     const text = $('body').text().replace(/\s+/g, ' ').trim()
 
     return { text, links: [...new Set(links)] }
 }
 
-export async function crawlApiDocumentation(projectId: string, url: string, customLlm?: { model?: string; apiKey?: string }) {
+export async function crawlApiDocumentation(
+    projectId: string,
+    url: string,
+    inline?: { model?: string; apiKey?: string }
+) {
     const session = await auth()
     if (!session?.user?.email) return { message: "Unauthorized" }
 
@@ -71,10 +72,10 @@ export async function crawlApiDocumentation(projectId: string, url: string, cust
     }
 
     try {
+        // ── BFS crawl ──────────────────────────────────────────────────────────
         const baseOrigin = new URL(url).origin
         const basePath = new URL(url).pathname
 
-        // BFS crawl — stays within the same origin and under the starting path
         const visited = new Set<string>()
         const queue: string[] = [url]
         const allTextParts: string[] = []
@@ -89,21 +90,18 @@ export async function crawlApiDocumentation(projectId: string, url: string, cust
             try {
                 pageData = await fetchPage(current, baseOrigin)
             } catch {
-                continue // skip pages that time out or fail
+                continue
             }
 
             if (pageData.text.length > 30) {
-                // Tag each page so the LLM knows which URL this content came from
                 allTextParts.push(`\n\n--- Page: ${current} ---\n${pageData.text}`)
                 pagesVisited++
             }
 
-            // Enqueue new links – only follow links that are under the doc root path
             for (const link of pageData.links) {
                 if (!visited.has(link) && !queue.includes(link)) {
                     try {
                         const linkPath = new URL(link).pathname
-                        // Only follow links that are under the base path of the root URL
                         if (linkPath.startsWith(basePath) || basePath === '/' || basePath === '') {
                             queue.push(link)
                         }
@@ -116,30 +114,12 @@ export async function crawlApiDocumentation(projectId: string, url: string, cust
             return { message: "Could not extract sufficient content from the provided URL." }
         }
 
-        // Combine and truncate all pages to fit into LLM context
         const combinedText = allTextParts.join('').substring(0, CRAWL_MAX_CHARS)
 
-        // Initialize OpenAI client
-        // Hierarchy: Inline Form -> Project DB Config -> System process.env
-        let model = customLlm?.model || "gpt-4o"
-        let apiKey = customLlm?.apiKey || process.env.OPENAI_API_KEY
-        let baseURL: string | undefined = undefined
-
-        if (model.startsWith("openrouter/")) {
-            baseURL = "https://openrouter.ai/api/v1"
-            if (!customLlm?.apiKey) {
-                apiKey = process.env.OPENROUTER_API_KEY || apiKey
-            }
-        }
-
-        if (!customLlm?.apiKey && project.llmConfig) {
-            try {
-                const config = JSON.parse(project.llmConfig)
-                if (config.apiKey) apiKey = config.apiKey
-            } catch { }
-        }
-
-        const openai = new OpenAI({ apiKey, baseURL, timeout: 120000 })
+        // ── LLM client (via factory) ───────────────────────────────────────────
+        // Priority: inline form input > project DB config > env vars
+        const llmConfig = resolveLlmConfig(project.llmConfig, inline)
+        const { client, model } = createLlmClient(llmConfig, 120_000)
 
         const systemPrompt = `You are an expert API Analyst. I will provide you with the extracted text from multiple pages of an API documentation website.
 Your job is to read the combined content and produce a single, comprehensive, valid JSON OpenAPI 3.0.0 specification describing ALL the API endpoints found across the documentation.
@@ -154,8 +134,8 @@ ${combinedText}
 
 Generate the consolidated JSON OpenAPI Spec now:`
 
-        const completion = await openai.chat.completions.create({
-            model: model.replace("openrouter/", ""),
+        const completion = await client.chat.completions.create({
+            model,
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userPrompt }
@@ -166,15 +146,11 @@ Generate the consolidated JSON OpenAPI Spec now:`
 
         const generatedJsonString = completion.choices[0].message.content || "{}"
         const generatedSpec = JSON.parse(generatedJsonString)
-
         const parsedSpec = await parseOpenApiSpec(generatedSpec)
 
         await prisma.project.update({
             where: { id: projectId },
-            data: {
-                openApiSpec: JSON.stringify(parsedSpec),
-                status: 'SPEC_UPLOADED'
-            }
+            data: { openApiSpec: JSON.stringify(parsedSpec), status: 'SPEC_UPLOADED' }
         })
 
         const paths = (parsedSpec as any).paths || {}
@@ -198,7 +174,6 @@ Generate the consolidated JSON OpenAPI Spec now:`
         }
 
         await prisma.$transaction(validations)
-
         revalidatePath(`/projects/${projectId}`)
         return { message: `Success — crawled ${pagesVisited} page(s)` }
 
