@@ -356,15 +356,29 @@ export default config;
 
             instance.status = 'STARTING';
 
-            // CRITICAL: Invoke the sandbox's OWN local next binary via node directly, bypassing npm scripts entirely.
-            // This avoids --turbo flag inheritance, npx home-directory EACCES, and version-specific flag incompatibilities.
-            // 'node <cwd>/node_modules/.bin/next dev' works identically on Next.js 14, 15 and 16.
-            const nextBin = path.join(cwd, 'node_modules', '.bin', 'next');
-            const devProcess = spawn('node', [nextBin, 'dev', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
-                cwd,
-                shell: false,
-                env: childEnv
-            });
+            // CRITICAL: On Windows, node_modules/.bin/next is a bash shell wrapper script,
+            // so spawning it with `node` causes a JS parse error ("missing ) after argument list").
+            // On Windows we must use `next.cmd`. On Linux/Docker we invoke `node next` directly
+            // (the binary is a real JS file on Linux), which avoids npx/npm overhead and
+            // --turbo flag inheritance.
+            const isWindows = process.platform === 'win32';
+            let devProcess: ReturnType<typeof spawn>;
+
+            if (isWindows) {
+                const nextCmd = path.join(cwd, 'node_modules', '.bin', 'next.cmd');
+                devProcess = spawn(nextCmd, ['dev', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
+                    cwd,
+                    shell: false,
+                    env: childEnv
+                });
+            } else {
+                const nextBin = path.join(cwd, 'node_modules', '.bin', 'next');
+                devProcess = spawn('node', [nextBin, 'dev', '-p', instance.port!.toString(), '-H', '0.0.0.0'], {
+                    cwd,
+                    shell: false,
+                    env: childEnv
+                });
+            }
             instance.process = devProcess;
 
             devProcess.stdout?.on('data', async (data: any) => {
