@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { UploadSpecForm } from "@/components/project/upload-spec-form"
+import { CrawlDocForm } from "@/components/project/crawl-doc-form"
 import { EndpointList } from "@/components/project/endpoint-list"
 import { LlmConfigForm } from "@/components/project/llm-config-form"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -104,12 +105,21 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                         <BookOpen className="h-10 w-10 text-muted-foreground" />
                     </div>
                     <div className="text-center">
-                        <h2 className="text-xl font-semibold mb-2">Upload your OpenAPI Specification</h2>
+                        <h2 className="text-xl font-semibold mb-2">Provide your API Specification</h2>
                         <p className="text-muted-foreground text-sm mb-6 max-w-md">
-                            Upload a JSON or YAML OpenAPI specification to get started. Apivolt will analyze it and generate a full Next.js frontend application.
+                            Upload a JSON/YAML file, or provide a documentation URL for Apivolt to analyze and generate a full Next.js frontend application.
                         </p>
                     </div>
-                    <UploadSpecForm projectId={project.id} />
+
+                    <div className="flex flex-col md:flex-row gap-6 w-full max-w-4xl justify-center">
+                        <UploadSpecForm projectId={project.id} />
+                        <div className="hidden md:flex flex-col items-center justify-center">
+                            <div className="h-full border-l border-muted"></div>
+                            <span className="bg-background px-2 text-muted-foreground text-sm py-2">OR</span>
+                            <div className="h-full border-l border-muted"></div>
+                        </div>
+                        <CrawlDocForm projectId={project.id} />
+                    </div>
                 </div>
             ) : (
                 /* ── Tabbed layout ── */

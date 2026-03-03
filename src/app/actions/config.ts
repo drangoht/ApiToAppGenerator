@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { deriveProvider } from "@/lib/llm-client"
 
 const configSchema = z.object({
     model: z.string().max(100, "Model name is too long"),
@@ -26,25 +27,21 @@ export async function saveLlmConfig(projectId: string, prevState: any, formData:
     const user = await prisma.user.findUnique({ where: { email: session.user.email } })
     if (!user) return { message: "User not found" }
 
-    const project = await prisma.project.findUnique({
-        where: { id: projectId },
-    })
-
+    const project = await prisma.project.findUnique({ where: { id: projectId } })
     if (!project || project.ownerId !== user.id) {
         return { message: "Project not found or unauthorized" }
     }
 
+    const model = validatedFields.data.model
     const config = {
-        provider: 'openai', // Hardcoded for now, or derive from model name
-        model: validatedFields.data.model,
-        apiKey: validatedFields.data.apiKey // Be careful storing this in plain text in production!
+        provider: deriveProvider(model), // Correctly derived from the model prefix
+        model,
+        apiKey: validatedFields.data.apiKey,
     }
 
     await prisma.project.update({
         where: { id: projectId },
-        data: {
-            llmConfig: JSON.stringify(config)
-        }
+        data: { llmConfig: JSON.stringify(config) }
     })
 
     revalidatePath(`/projects/${projectId}`)
