@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Loader2, Play, ExternalLink } from 'lucide-react'
 
 export default function SharePage({ params }: { params: Promise<{ projectId: string }> }) {
@@ -26,14 +26,17 @@ export default function SharePage({ params }: { params: Promise<{ projectId: str
 
     useEffect(() => {
         if (!projectId) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchStatus()
         const interval = setInterval(fetchStatus, 3000)
         return () => clearInterval(interval)
     }, [projectId])
 
-    const proxyUrl = port && projectId
-        ? `${typeof window !== 'undefined' ? window.location.origin : ''}/preview/${port}/${projectId}`
-        : null
+    const proxyUrl = useMemo(() => {
+        if (!port || !projectId) return null
+        const origin = typeof window !== 'undefined' ? window.location.origin : ''
+        return `${origin}/preview/${port}/${projectId}`
+    }, [port, projectId])
 
     return (
         <div className="fixed inset-0 bg-black flex flex-col">
@@ -55,7 +58,7 @@ export default function SharePage({ params }: { params: Promise<{ projectId: str
             <div className="flex-1 relative">
                 {status === 'READY' && proxyUrl ? (
                     <iframe
-                        src={`${proxyUrl}?_rnd=${Date.now()}`}
+                        src={proxyUrl}
                         className="absolute inset-0 w-full h-full border-0"
                         title="App Preview"
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"

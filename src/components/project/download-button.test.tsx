@@ -7,9 +7,9 @@ describe('DownloadButton', () => {
 
     beforeEach(() => {
         // Intercept native browser navigation properties
-        // @ts-ignore
+        // @ts-expect-error jsdom location override for test
         delete window.location;
-        window.location = { href: '' } as any;
+        window.location = { href: '' } as unknown as Location & { href: string };
     })
 
     afterEach(() => {

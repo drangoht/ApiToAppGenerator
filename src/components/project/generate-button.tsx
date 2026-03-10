@@ -1,8 +1,8 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Play, Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
+import { Play, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -11,22 +11,14 @@ export function GenerateButton({ projectId, disabled }: { projectId: string; dis
     const router = useRouter()
     const pollRef = useRef<NodeJS.Timeout | null>(null)
 
-    // If page loads with status=GENERATING (e.g. after page refresh), start polling immediately
-    useEffect(() => {
-        if (disabled) {
-            startPolling()
-        }
-        return () => stopPolling()
-    }, [])
-
-    function stopPolling() {
+    const stopPolling = useCallback(() => {
         if (pollRef.current) {
             clearInterval(pollRef.current)
             pollRef.current = null
         }
-    }
+    }, [])
 
-    function startPolling() {
+    const startPolling = useCallback(() => {
         stopPolling()
         pollRef.current = setInterval(async () => {
             try {
@@ -49,7 +41,15 @@ export function GenerateButton({ projectId, disabled }: { projectId: string; dis
                 // Network error during poll — keep trying
             }
         }, 3000) // Poll every 3 seconds
-    }
+    }, [projectId, router, stopPolling])
+
+    // If page loads with status=GENERATING (e.g. after page refresh), start polling immediately
+    useEffect(() => {
+        if (disabled) {
+            startPolling()
+        }
+        return () => stopPolling()
+    }, [disabled, startPolling, stopPolling])
 
     async function handleGenerate() {
         setIsGenerating(true)
@@ -66,7 +66,7 @@ export function GenerateButton({ projectId, disabled }: { projectId: string; dis
             // 202 Accepted — generation started in background, begin polling
             toast.info('Generation started — this may take 1–3 minutes...')
             startPolling()
-        } catch (e) {
+        } catch {
             toast.error('An unexpected error occurred')
             setIsGenerating(false)
         }

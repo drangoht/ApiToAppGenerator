@@ -107,7 +107,7 @@ export class GeneratedProjectWriter {
       } catch {
         // ignore, we'll start from empty pkg
       }
-      let pkg = JSON.parse(pkgStr || "{}");
+      const pkg = JSON.parse(pkgStr || "{}");
 
       if (!pkg.dependencies) pkg.dependencies = {};
       if (!pkg.devDependencies) pkg.devDependencies = {};
@@ -193,7 +193,7 @@ export class GeneratedProjectWriter {
         // ignore, we'll create a fresh one
       }
 
-      let tsconfig = JSON.parse(tsconfigStr || "{}");
+      const tsconfig = JSON.parse(tsconfigStr || "{}");
       if (!tsconfig.compilerOptions) tsconfig.compilerOptions = {};
 
       tsconfig.compilerOptions.baseUrl = ".";

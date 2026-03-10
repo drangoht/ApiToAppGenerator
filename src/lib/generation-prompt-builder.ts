@@ -11,7 +11,6 @@ interface ProjectLike {
   id: string;
   name: string | null;
   description: string | null;
-  openApiSpec: string;
   targetApiConfig: string | null;
   enrichments: EnrichmentLike[];
 }

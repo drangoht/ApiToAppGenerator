@@ -14,9 +14,9 @@ describe('LogoutButton', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         // Mock native window.location property to catch mutations
-        // @ts-ignore
+        // @ts-expect-error jsdom location override for test
         delete window.location;
-        window.location = { href: '' } as any;
+        window.location = { href: '' } as unknown as Location & { href: string };
     })
 
     afterEach(() => {

@@ -32,7 +32,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     if (!project) return <div>Project not found</div>
 
     const hasSpec = !!project.openApiSpec
-    let endpoints: any[] = []
+    const endpoints: any[] = []
     let llmConfig: any = {}
     let specInfo: { title?: string; description?: string; version?: string } | null = null
 

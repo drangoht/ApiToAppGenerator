@@ -125,7 +125,7 @@ export function PreviewPanel({ projectId }: { projectId: string }) {
 
                 {status === 'READY' && port && (
                     <iframe
-                        src={`${typeof window !== 'undefined' ? window.location.origin : ''}/preview/${port}/${projectId}?_rnd=${Date.now()}`}
+                        src={`${typeof window !== 'undefined' ? window.location.origin : ''}/preview/${port}/${projectId}`}
                         className="w-full h-full border-0 bg-white"
                         title="App Preview"
                     />
