@@ -1,12 +1,9 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest'
-import { GeneratorService } from './generator'
+import { describe, it, expect } from "vitest";
+import { minifyOpenApiSpec } from "@/lib/openapi-minifier";
 
 describe('GeneratorService', () => {
     it('minifies OpenAPI spec by efficiently removing descriptions and examples to save LLM tokens', () => {
-        // We use a dummy ID and key since we're only testing the pure local parser function
-        const service = new GeneratorService('test-id', 'test-key', 'gpt-4');
-
         const spec = {
             openapi: "3.0.0",
             info: { title: "Test API", description: "This should stay" },
@@ -41,7 +38,7 @@ describe('GeneratorService', () => {
             }
         };
 
-        const minified = service['minifyOpenApiSpec'](spec);
+        const minified = minifyOpenApiSpec(spec);
 
         // Path level descriptions and summaries are extracted out of the spec body to save tokens
         expect(minified.paths['/users'].get.description).toBeUndefined();
@@ -58,5 +55,5 @@ describe('GeneratorService', () => {
         // Essential routing data remains securely intact
         expect(minified.paths['/users'].get.responses['200']).toBeDefined();
         expect(minified.components.schemas.User.type).toBe("object");
-    })
-})
+    });
+});
