@@ -59,6 +59,12 @@ Apivolt is built to be modern, fast, and scalable. Here is a breakdown of the co
 
 ---
 
+## 🧩 Technical Architecture
+
+For a deep dive into the internal architecture (Prisma models, generation engine, preview sandbox, and CI/CD), see the dedicated [ARCHITECTURE.md](./ARCHITECTURE.md) document.
+
+---
+
 ## 🛡️ Security & Hardening (OWASP Standards)
 
 Apivolt takes security seriously. The platform's architecture acts dynamically on raw user input and large parsing payloads. To mitigate injection and exhaustion vectors, the following robust defenses have been implemented across the backend server actions:

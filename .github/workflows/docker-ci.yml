@@ -3,8 +3,40 @@ name: Docker CI / CD
 on:
   push:
     branches: [ "master" ]
+    paths:
+      - "src/**"
+      - "prisma/**"
+      - "public/**"
+      - "types/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "next.config.*"
+      - "tailwind.config.*"
+      - "postcss.config.*"
+      - "vitest.config.*"
+      - "eslint.config.*"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - ".github/workflows/docker-ci.yml"
   pull_request:
     branches: [ "master" ]
+    paths:
+      - "src/**"
+      - "prisma/**"
+      - "public/**"
+      - "types/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "next.config.*"
+      - "tailwind.config.*"
+      - "postcss.config.*"
+      - "vitest.config.*"
+      - "eslint.config.*"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - ".github/workflows/docker-ci.yml"
 
 jobs:
 
