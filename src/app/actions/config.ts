@@ -1,10 +1,10 @@
 'use server'
 
-import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { deriveProvider } from "@/lib/llm-client"
+import { verifyProjectAccess } from "@/lib/project-access"
 
 const configSchema = z.object({
     model: z.string().max(100, "Model name is too long"),
@@ -12,8 +12,8 @@ const configSchema = z.object({
 })
 
 export async function saveLlmConfig(projectId: string, prevState: any, formData: FormData) {
-    const session = await auth()
-    if (!session?.user?.email) return { message: "Unauthorized" }
+    const access = await verifyProjectAccess(projectId)
+    if (!access) return { message: "Unauthorized" }
 
     const validatedFields = configSchema.safeParse({
         model: formData.get('model'),
@@ -24,17 +24,9 @@ export async function saveLlmConfig(projectId: string, prevState: any, formData:
         return { errors: validatedFields.error.flatten().fieldErrors }
     }
 
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (!user) return { message: "User not found" }
-
-    const project = await prisma.project.findUnique({ where: { id: projectId } })
-    if (!project || project.ownerId !== user.id) {
-        return { message: "Project not found or unauthorized" }
-    }
-
     const model = validatedFields.data.model
     const config = {
-        provider: deriveProvider(model), // Correctly derived from the model prefix
+        provider: deriveProvider(model),
         model,
         apiKey: validatedFields.data.apiKey,
     }

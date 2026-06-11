@@ -7,8 +7,6 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 
 const initialState: RegisterState = {
     message: null,
@@ -17,15 +15,6 @@ const initialState: RegisterState = {
 
 export function RegisterForm() {
     const [state, dispatch] = useActionState(register, initialState)
-    const router = useRouter()
-
-    useEffect(() => {
-        // Simple redirect check if successful (needs more robust handling via return state)
-        // But since server action redirects on success... wait.
-        // If server action redirects, we don't need to handle it here.
-        // But server action redirect throws, so we catch it?
-        // Let's rely on server action redirect.
-    }, [])
 
     return (
         <Card className="w-[350px]">

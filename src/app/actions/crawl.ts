@@ -1,21 +1,16 @@
 'use server'
 
-import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { parseOpenApiSpec } from "@/lib/openapi-parser"
 import { createLlmClient, resolveLlmConfig } from "@/lib/llm-client"
 import * as cheerio from "cheerio"
+import { verifyProjectAccess } from "@/lib/project-access"
 
 const CRAWL_MAX_PAGES = 20
 const CRAWL_MAX_CHARS = 80000
 const CRAWL_PAGE_TIMEOUT_MS = 10000
 
-/**
- * Fetches a single page and returns:
- * - `text`: main visible text content (scripts/style stripped)
- * - `links`: same-origin href links found on the page
- */
 async function fetchPage(url: string, baseOrigin: string): Promise<{ text: string; links: string[] }> {
     const response = await fetch(url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Apivolt/1.0 Crawler)' },
@@ -56,23 +51,15 @@ export async function crawlApiDocumentation(
     url: string,
     inline?: { model?: string; apiKey?: string }
 ) {
-    const session = await auth()
-    if (!session?.user?.email) return { message: "Unauthorized" }
+    const access = await verifyProjectAccess(projectId)
+    if (!access) return { message: "Unauthorized" }
+    const { project } = access
 
     if (!url || !url.startsWith("http")) {
         return { message: "Invalid URL provided" }
     }
 
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (!user) return { message: "User not found" }
-
-    const project = await prisma.project.findUnique({ where: { id: projectId } })
-    if (!project || project.ownerId !== user.id) {
-        return { message: "Project not found or unauthorized" }
-    }
-
     try {
-        // ── BFS crawl ──────────────────────────────────────────────────────────
         const baseOrigin = new URL(url).origin
         const basePath = new URL(url).pathname
 
@@ -116,8 +103,6 @@ export async function crawlApiDocumentation(
 
         const combinedText = allTextParts.join('').substring(0, CRAWL_MAX_CHARS)
 
-        // ── LLM client (via factory) ───────────────────────────────────────────
-        // Priority: inline form input > project DB config > env vars
         const llmConfig = resolveLlmConfig(project.llmConfig, inline)
         const { client, model } = createLlmClient(llmConfig, 120_000)
 
@@ -148,18 +133,13 @@ Generate the consolidated JSON OpenAPI Spec now:`
         const generatedSpec = JSON.parse(generatedJsonString)
         const parsedSpec = await parseOpenApiSpec(generatedSpec)
 
-        await prisma.project.update({
-            where: { id: projectId },
-            data: { openApiSpec: JSON.stringify(parsedSpec), status: 'SPEC_UPLOADED' }
-        })
-
         const paths = (parsedSpec as any).paths || {}
-        const validations = []
+        const enrichmentUpserts = []
 
         for (const [path, methods] of Object.entries(paths)) {
             for (const [method, details] of Object.entries(methods as any)) {
                 if (['get', 'post', 'put', 'delete', 'patch', 'options', 'head'].includes(method)) {
-                    validations.push(prisma.endpointEnrichment.upsert({
+                    enrichmentUpserts.push(prisma.endpointEnrichment.upsert({
                         where: { projectId_method_path: { projectId, method: method.toUpperCase(), path } },
                         update: {},
                         create: {
@@ -173,7 +153,14 @@ Generate the consolidated JSON OpenAPI Spec now:`
             }
         }
 
-        await prisma.$transaction(validations)
+        await prisma.$transaction([
+            prisma.project.update({
+                where: { id: projectId },
+                data: { openApiSpec: JSON.stringify(parsedSpec), status: 'SPEC_UPLOADED' }
+            }),
+            ...enrichmentUpserts,
+        ])
+
         revalidatePath(`/projects/${projectId}`)
         return { message: `Success — crawled ${pagesVisited} page(s)` }
 

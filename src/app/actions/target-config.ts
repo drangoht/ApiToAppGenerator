@@ -1,23 +1,12 @@
 'use server'
 
-import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { verifyProjectAccess } from "@/lib/project-access"
 
 export async function saveTargetApiConfig(projectId: string, prevState: any, formData: FormData) {
-    const session = await auth()
-    if (!session?.user?.email) return { message: "Unauthorized", success: false }
-
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (!user) return { message: "User not found", success: false }
-
-    const project = await prisma.project.findUnique({
-        where: { id: projectId },
-    })
-
-    if (!project || project.ownerId !== user.id) {
-        return { message: "Project not found or unauthorized", success: false }
-    }
+    const access = await verifyProjectAccess(projectId)
+    if (!access) return { message: "Unauthorized", success: false }
 
     const configStr = formData.get('targetApiConfig') as string;
     let configObj = {};

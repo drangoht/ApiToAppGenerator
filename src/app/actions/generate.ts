@@ -1,42 +1,28 @@
 'use server'
 
-import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { GeneratorService } from "@/lib/generator"
 import { revalidatePath } from "next/cache"
+import { resolveLlmConfig, resolveEnvApiKey } from "@/lib/llm-client"
+import { verifyProjectAccess } from "@/lib/project-access"
 
 export async function generateAppAction(projectId: string) {
-    const session = await auth()
-
-    if (!session?.user?.email) return { message: "Unauthorized" }
-
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-
-    if (!user) return { message: "User not found" }
-
-    const project = await prisma.project.findUnique({ where: { id: projectId } })
-    if (!project || project.ownerId !== user.id) return { message: "Project not found or unauthorized" }
+    const access = await verifyProjectAccess(projectId)
+    if (!access) return { message: "Unauthorized" }
+    const { project } = access
 
     try {
-        // Update status
         await prisma.project.update({ where: { id: projectId }, data: { status: 'GENERATING' } });
 
-        // Initialize generator
-        // We need to retrieve API key and model from config if set, or use env
-        let apiKey = undefined;
-        let model = "gpt-4-turbo";
-        if (project.llmConfig) {
-            const config = JSON.parse(project.llmConfig);
-            if (config.apiKey) apiKey = config.apiKey;
-            if (config.model) model = config.model;
-        }
+        const llmConfig = resolveLlmConfig(project.llmConfig)
+        const resolvedApiKey = llmConfig.apiKey || resolveEnvApiKey(llmConfig.provider!)
 
-        if (!apiKey && !process.env.OPENAI_API_KEY) {
+        if (!resolvedApiKey) {
             await prisma.project.update({ where: { id: projectId }, data: { status: 'DRAFT' } });
-            return { message: "OpenAI API Key is missing. Please add it in the Configuration tab.", success: false };
+            return { message: "No API Key configured. Please add one in the Settings tab.", success: false };
         }
 
-        const generator = new GeneratorService(projectId, apiKey, model);
+        const generator = new GeneratorService(projectId, llmConfig.apiKey, llmConfig.model);
         await generator.generate();
 
         await prisma.project.update({ where: { id: projectId }, data: { status: 'READY' } });

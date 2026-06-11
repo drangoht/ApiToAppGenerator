@@ -1,25 +1,15 @@
-import { auth } from "@/auth"
-import { prisma } from "@/lib/prisma"
 import path from "path"
 import fs from "fs"
 import archiver from "archiver"
 import { NextResponse } from "next/server"
+import { verifyProjectAccess } from "@/lib/project-access"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    const session = await auth()
-    if (!session?.user?.email) {
-        return new NextResponse("Unauthorized", { status: 401 })
-    }
-
     const { id: projectId } = await params;
 
-    // Verify ownership
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    const project = await prisma.project.findUnique({ where: { id: projectId } })
-
-    if (!project || project.ownerId !== user?.id) {
-        return new NextResponse("Unauthorized", { status: 403 })
-    }
+    const access = await verifyProjectAccess(projectId)
+    if (!access) return new NextResponse("Unauthorized", { status: 401 })
+    const { project } = access
 
     const projectDir = path.join(process.cwd(), 'projects', projectId, 'generated');
 
@@ -27,9 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         return new NextResponse("No generated code found", { status: 404 })
     }
 
-    const archive = archiver('zip', {
-        zlib: { level: 9 }
-    });
+    const archive = archiver('zip', { zlib: { level: 9 } });
 
     const stream = new ReadableStream({
         start(controller) {

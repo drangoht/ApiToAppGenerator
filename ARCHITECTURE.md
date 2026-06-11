@@ -52,7 +52,7 @@ File: `prisma/schema.prisma`
     - `openApiSpec?: string` – raw JSON string of OpenAPI spec
     - `llmConfig?: string` – JSON (model + apiKey overrides)
     - `targetApiConfig?: string` – JSON map of env vars for generated app
-    - `status: "DRAFT" | "GENERATING" | "READY" | "ERROR"`
+    - `status: string` — plain string (no DB enum). Known values: `"DRAFT"`, `"SPEC_UPLOADED"`, `"GENERATING"`, `"READY"`, `"ERROR"`
   - Relations:
     - `owner: User`
     - `enrichments: EndpointEnrichment[]`
@@ -72,7 +72,7 @@ This schema underpins **projects, enrichments, and LLM configuration** everywher
 
 - `src/lib/prisma.ts` – exports a singleton Prisma client used by server actions, routes, and generator.
 - `src/lib/llm-client.ts` – wraps OpenAI / OpenRouter client creation:
-  - `createLlmClient(config, maxTokens)` returns `{ client, model }`
+  - `createLlmClient(config, timeoutMs)` returns `{ client, model }` — second arg is an HTTP request timeout in milliseconds (default `120_000`)
   - `resolveLlmConfig(...)` merges default + project overrides
 
 These modules isolate external dependencies (DB + LLM) from higher-level services.
@@ -143,7 +143,7 @@ This module is the **infrastructure boundary** between the LLM’s textual outpu
       1. Loads `project` (including `enrichments`) via Prisma.
       2. Validates `openApiSpec` presence; parses it as JSON.
       3. Calls `buildGenerationPrompts(project, spec)` to get `systemPrompt` + `userPrompt`.
-      4. Uses `createLlmClient(resolveLlmConfig(...))` to get `{ client, model }`.
+      4. Uses `createLlmClient(resolveLlmConfig(null, { model, apiKey }), 240_000)` to get `{ client, model }`. Note: the project's saved `llmConfig` is NOT re-read from the DB here — the caller (`generate.ts` server action) reads it and passes `model`/`apiKey` to the constructor. The `240_000` timeout (4 min) is intentionally higher than the default 120s to handle large specs.
       5. Calls `client.chat.completions.create` with low temperature for deterministic code.
       6. Extracts `generatedText` from the first choice.
       7. Instantiates a `GeneratedProjectWriter` and calls `writeFromLlmOutput(generatedText, project)`.
@@ -188,8 +188,10 @@ This subsystem encapsulates **sandbox stability** and **Docker quirks**, keeping
 
 #### 5.1 Auth & user flows
 
+- `src/auth.ts`
+  - **Actual NextAuth v5 config**: defines the credentials provider, `authorize` callback (Prisma lookup + bcrypt compare), and session/JWT callbacks. This is where to add providers or change session shape.
 - `src/app/api/auth/[...nextauth]/route.ts`
-  - NextAuth v5 route for credentials-based authentication.
+  - Thin re-export only (`export const { GET, POST } = handlers`). Do not put config here.
 - `src/app/actions/auth.ts`
   - Server actions for login, registration, and logout, using Prisma + Zod.
 
@@ -210,8 +212,8 @@ This subsystem encapsulates **sandbox stability** and **Docker quirks**, keeping
 - `src/app/actions/crawl.ts`
   - `crawlApiDocumentation(projectId, url, { model, apiKey }?)`:
     - Auth + ownership checks.
-    - Fetches HTML from `url`, strips to text with `cheerio`.
-    - Uses LLM to convert text to OpenAPI 3 JSON.
+    - BFS-crawls up to **20 pages** (`CRAWL_MAX_PAGES`) from `url`, following same-origin links; combined text truncated to **80 000 characters** (`CRAWL_MAX_CHARS`). Each page is fetched with a 10s timeout.
+    - Sends combined text to LLM (120s timeout) to synthesise an OpenAPI 3 JSON spec.
     - Validates with `parseOpenApiSpec`.
     - Saves to `openApiSpec` and updates enrichments.
 
